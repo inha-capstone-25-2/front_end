@@ -32,12 +32,14 @@ export interface BasePaperCardProps {
   paperId: number;
   title: string;
   authors: string | string[];
-  publisher: string;
+  publisher?: string;
   year?: number | string;
   pages?: string;
   summary?: string;
   translatedSummary?: string;
   externalUrl?: string;
+  update_count?: number; // 업데이트 횟수
+  categories?: string[]; // 카테고리 배열
   isBookmarked?: boolean;
   onToggleBookmark?: (paperId: number) => void;
   onPaperClick?: (paperId: number) => void;

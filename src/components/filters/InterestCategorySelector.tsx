@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Heart, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, X, Loader2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
+import { addUserInterests, fetchUserInterests } from '../../lib/api';
 
 interface SubCategory {
   name: string;
@@ -133,31 +134,99 @@ const MAX_SELECTIONS = 5;
 export function InterestCategorySelector() {
   const [selectedCategories, setSelectedCategories] = useState<SubCategory[]>([]);
   const [expandedCategory, setExpandedCategory] = useState<string | null>('ai-learning');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isLoadingInterests, setIsLoadingInterests] = useState(true);
+
+  // 카테고리 코드를 SubCategory 객체로 변환하는 헬퍼 함수
+  const mapCategoryCodesToSubCategories = (categoryCodes: string[]): SubCategory[] => {
+    const mappedCategories: SubCategory[] = [];
+    
+    for (const code of categoryCodes) {
+      // categories 배열에서 해당 코드 찾기
+      for (const category of categories) {
+        const subCategory = category.subCategories.find(sub => sub.code === code);
+        if (subCategory) {
+          mappedCategories.push(subCategory);
+          break; // 찾았으면 다음 코드로
+        }
+      }
+    }
+    
+    return mappedCategories;
+  };
+
+  // 컴포넌트 마운트 시 관심 카테고리 조회
+  useEffect(() => {
+    const loadUserInterests = async () => {
+      try {
+        setIsLoadingInterests(true);
+        const response = await fetchUserInterests();
+        const categoryCodes = response.category_codes || [];
+        
+        // 카테고리 코드를 SubCategory 객체로 변환
+        const mappedCategories = mapCategoryCodesToSubCategories(categoryCodes);
+        
+        setSelectedCategories(mappedCategories);
+        setHasUnsavedChanges(false); // 서버와 동기화된 상태
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '관심 카테고리를 불러오는 중 오류가 발생했습니다.';
+        toast.error(errorMessage);
+      } finally {
+        setIsLoadingInterests(false);
+      }
+    };
+
+    loadUserInterests();
+  }, []);
 
   const handleCategoryClick = (subCategory: SubCategory) => {
     const isAlreadySelected = selectedCategories.some(cat => cat.code === subCategory.code);
 
+    // 선택 해제
     if (isAlreadySelected) {
-      // 선택 해제
-      setSelectedCategories(prev => prev.filter(cat => cat.code !== subCategory.code));
+      const newCategories = selectedCategories.filter(cat => cat.code !== subCategory.code);
+      setSelectedCategories(newCategories);
+      setHasUnsavedChanges(true);
+      toast.info('카테고리가 제거되었습니다. 저장 버튼을 눌러 변경사항을 반영하세요.');
     } else {
       // 새로 선택
       if (selectedCategories.length >= MAX_SELECTIONS) {
         toast.error(`최대 ${MAX_SELECTIONS}개까지만 선택할 수 있습니다.`);
         return;
       }
-      setSelectedCategories(prev => [...prev, subCategory]);
+      const newCategories = [...selectedCategories, subCategory];
+      setSelectedCategories(newCategories);
+      setHasUnsavedChanges(true);
+      toast.info('카테고리가 추가되었습니다. 저장 버튼을 눌러 변경사항을 반영하세요.');
     }
   };
 
   const handleRemoveCategory = (code: string) => {
-    setSelectedCategories(prev => prev.filter(cat => cat.code !== code));
+    const newCategories = selectedCategories.filter(cat => cat.code !== code);
+    setSelectedCategories(newCategories);
+    setHasUnsavedChanges(true);
+    toast.info('카테고리가 삭제되었습니다. 저장 버튼을 눌러 변경사항을 반영하세요.');
   };
 
-  const handleSave = () => {
-    console.log('Saved categories:', selectedCategories);
-    toast.success('관심 카테고리가 저장되었습니다.');
-    // 실제로는 API 호출하여 서버에 저장
+  const handleSave = async () => {
+    if (selectedCategories.length === 0) {
+      toast.error('선택한 카테고리가 없습니다.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const categoryCodes = selectedCategories.map(cat => cat.code);
+      await addUserInterests(categoryCodes);
+      setHasUnsavedChanges(false);
+      toast.success('관심 카테고리가 저장되었습니다.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '관심 카테고리 저장 중 오류가 발생했습니다.';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isCategorySelected = (code: string) => {
@@ -186,16 +255,36 @@ export function InterestCategorySelector() {
           <p className="text-sm text-gray-600">최대 5개까지 선택할 수 있습니다</p>
         </div>
 
+        {/* 변경사항 경고 배너 */}
+        {hasUnsavedChanges && (
+          <div className="mb-4 p-3 bg-yellow-50 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            <p className="text-sm text-yellow-800">
+              변경사항이 있습니다. 저장 버튼을 눌러 변경사항을 반영하세요. 저장하지 않으면 변경사항이 손실될 수 있습니다.
+            </p>
+          </div>
+        )}
+
         {/* 선택된 카테고리 표시 */}
-        {selectedCategories.length > 0 && (
+        {isLoadingInterests ? (
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
+            <p className="text-sm mb-3" style={{ color: '#215285' }}>✓ 선택한 카테고리</p>
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#215285' }} />
+              <span className="text-sm text-gray-600">관심 카테고리를 불러오는 중...</span>
+            </div>
+          </div>
+        ) : selectedCategories.length > 0 ? (
           <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
             <p className="text-sm mb-3" style={{ color: '#215285' }}>✓ 선택한 카테고리</p>
             <div className="flex flex-wrap gap-2">
               {selectedCategories.map((category) => (
                 <div
                   key={category.code}
-                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm shadow-sm hover:shadow-md transition-shadow"
-                  style={{ backgroundColor: '#215285', color: '#ffffff' }}
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm shadow-sm hover:shadow-md transition-all"
+                  style={{ 
+                    backgroundColor: '#215285', 
+                    color: '#ffffff',
+                  }}
                 >
                   <span>{category.name}</span>
                   <button
@@ -209,7 +298,7 @@ export function InterestCategorySelector() {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* 1차 카테고리 - 가로 정렬 버튼형 */}
         <div className="mb-6">
@@ -297,12 +386,24 @@ export function InterestCategorySelector() {
         <div className="flex justify-end mt-6">
           <Button
             onClick={handleSave}
-            className="text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: '#215285' }}
-            disabled={selectedCategories.length === 0}
+            className="text-white hover:opacity-90 transition-all"
+            style={{ 
+              backgroundColor: hasUnsavedChanges ? '#f59e0b' : '#215285',
+              boxShadow: hasUnsavedChanges ? '0 0 0 3px rgba(245, 158, 11, 0.2)' : 'none',
+            }}
+            disabled={selectedCategories.length === 0 || isLoading}
           >
-            <Heart className="w-4 h-4 mr-2" />
-            관심 카테고리 저장
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              <>
+                <Heart className="w-4 h-4 mr-2" />
+                {hasUnsavedChanges ? '변경사항 저장' : '관심 카테고리 저장'}
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

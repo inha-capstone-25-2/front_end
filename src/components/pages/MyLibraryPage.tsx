@@ -16,19 +16,24 @@ import {
 } from '../ui/select';
 import { UnifiedPaperCard } from '../papers/UnifiedPaperCard';
 import { Alert, AlertDescription } from '../ui/alert';
-import { useBookmarksQuery, useToggleBookmarkMutation } from '../../hooks/api';
+import { useBookmarksQuery } from '../../hooks/api';
 import { usePaperActions } from '../../hooks/usePaperActions';
 import { useAuthStore } from '../../store/authStore';
+import { Paper } from '../../lib/api';
 
 export function MyLibraryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const [sortBy, setSortBy] = useState<'recent' | 'title' | 'year'>('recent');
-  const { handlePaperClick } = usePaperActions();
+  const { handlePaperClick, handleBookmark } = usePaperActions();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   
-  const { data: bookmarkedPapers = [], isLoading, isError, error } = useBookmarksQuery();
-  const toggleBookmarkMutation = useToggleBookmarkMutation();
+  const { data: bookmarks = [], isLoading, isError, error } = useBookmarksQuery();
+
+  // BookmarkItem[]을 Paper[]로 변환 (논문 정보가 있는 것만)
+  const bookmarkedPapers = bookmarks
+    .filter(bookmark => bookmark.paper) // 논문 정보가 있는 북마크만 필터링
+    .map(bookmark => bookmark.paper!); // 논문 정보가 있으므로 non-null assertion 사용
 
   // 검색어 필터
   const filteredPapers = bookmarkedPapers.filter(paper => {
@@ -58,10 +63,6 @@ export function MyLibraryPage() {
 
   const handleSearch = (query: string) => {
     setSearchParams({ q: query });
-  };
-
-  const handleBookmark = (paperId: number) => {
-    toggleBookmarkMutation.mutate(paperId);
   };
 
   if (!isLoggedIn) {
@@ -152,7 +153,6 @@ export function MyLibraryPage() {
                             size="icon"
                             onClick={() => handleBookmark(paper.id)}
                             className="ml-4"
-                            disabled={toggleBookmarkMutation.isPending}
                           >
                             <Bookmark
                               className="h-5 w-5"

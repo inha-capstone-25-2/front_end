@@ -1,4 +1,4 @@
-import { Clock, ChevronRight, Bookmark, ArrowRight } from 'lucide-react';
+import { Clock, ChevronRight, Bookmark, ArrowRight, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import {
   Tooltip,
@@ -7,9 +7,9 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import { useAuthStore } from '../../store/authStore';
-import { useAppStore } from '../../store/useAppStore';
-import { useQueries } from '@tanstack/react-query';
 import { useNavigation } from '../../hooks/useNavigation';
+import { useMyProfileQuery } from '../../hooks/api/useMyProfile';
+import { useSearchHistoryQuery } from '../../hooks/api/usePapers';
 
 interface RecentlyViewedPapersProps {
   onPaperClick?: (paperId: number) => void;
@@ -25,30 +25,34 @@ export function RecentlyViewedPapers({
   onToggleBookmark,
 }: RecentlyViewedPapersProps) {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const recentlyViewedPaperIds = useAppStore((state) => state.recentlyViewedPaperIds);
   const { goToRecentPapers } = useNavigation();
+  const { data: profile } = useMyProfileQuery();
+  const userId = profile?.id || null;
 
-  // 최근 조회한 논문들의 정보를 가져오기
-  const paperQueries = useQueries({
-    queries: recentlyViewedPaperIds.slice(0, 7).map((paperId) => ({
-      queryKey: ['papers', 'detail', paperId],
-      queryFn: async () => {
-        const { api, endpoints } = await import('../../lib/api');
-        const response = await api.get(endpoints.papers.detail(paperId));
-        return response.data;
-      },
-      enabled: !!paperId && isLoggedIn,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    })),
-  });
+  // 검색 기록 조회 (메인 페이지용 7개)
+  const { data: searchHistoryData, isLoading, isError } = useSearchHistoryQuery(
+    userId,
+    7,
+    isLoggedIn
+  );
 
-  // 로드된 논문들만 필터링
-  const recentPapers = paperQueries
-    .map((query) => query.data)
-    .filter((paper): paper is NonNullable<typeof paper> => paper !== undefined);
+  const recentPapers = searchHistoryData?.papers || [];
 
-  // 조회한 논문이 없으면 섹션을 표시하지 않음
-  if (recentlyViewedPaperIds.length === 0 || recentPapers.length === 0) {
+  // 로딩 상태 처리
+  if (isLoading) {
+    return (
+      <section className="w-full py-16 md:py-20 bg-[rgb(255,255,255)]">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-6 lg:px-10">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#4FA3D1' }} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // 에러 상태 처리 또는 데이터가 없으면 섹션 숨김
+  if (isError || recentPapers.length === 0) {
     return null;
   }
 

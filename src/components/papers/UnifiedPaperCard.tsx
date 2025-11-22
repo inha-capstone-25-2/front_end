@@ -29,6 +29,8 @@ export function UnifiedPaperCard({
   summary,
   translatedSummary,
   externalUrl,
+  update_count,
+  categories,
   isBookmarked = false,
   onToggleBookmark,
   onPaperClick,
@@ -112,30 +114,38 @@ export function UnifiedPaperCard({
                 {title}
               </h3>
 
-              {/* Meta Info */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+              {/* Authors */}
+              <div className="text-sm text-gray-600">
                 <span>{authorsText}</span>
-                <span className="text-gray-400">•</span>
-                <span>{publisher}</span>
-                {yearText && (
-                  <>
-                    <span className="text-gray-400">•</span>
-                    <span>{yearText}</span>
-                  </>
-                )}
               </div>
 
-              {/* Translated Summary */}
-              {showTranslatedSummary && translatedSummary && (
-                <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-[#4FA3D1]">
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    <span className="inline-block px-2 py-0.5 bg-[#4FA3D1] text-white text-xs rounded mr-2">
-                      번역 요약
-                    </span>
-                    {translatedSummary}
-                  </p>
-                </div>
-              )}
+              {/* Meta Info: update_count and categories */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Update Count */}
+                {update_count !== undefined && update_count !== null && (
+                  <span className="text-sm text-gray-600">
+                    업데이트: {update_count}회
+                  </span>
+                )}
+
+                {/* Categories */}
+                {categories && categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((category, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: '#EAF4FA',
+                          color: '#4FA3D1',
+                        }}
+                      >
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* View Original Button */}
               {showExternalLink && externalUrl && (

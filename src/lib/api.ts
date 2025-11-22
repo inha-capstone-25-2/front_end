@@ -15,19 +15,21 @@ import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, Usernam
  * API Base URL 설정
  * 환경 변수 VITE_API_BASE_URL이 설정되어 있으면 사용하고, 없으면 기본값 사용
  */
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://35.94.158.97';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://35.94.93.225';
 
 /**
  * Axios 인스턴스 생성
  * 모든 API 요청의 기본 설정을 포함합니다.
  * - baseURL: 서버 주소
- * - timeout: 요청 타임아웃 (10초)
+ * - timeout: 요청 타임아웃 (10초) - 개별 요청에서 timeout을 지정하면 그 값이 우선 적용됨
  * - withCredentials: 쿠키 기반 인증을 위한 설정
  * - transformRequest: form-urlencoded 요청을 위한 변환 로직
+ * 
+ * 주의: 검색 API는 응답 시간이 길어 개별 요청에서 timeout: 120000 (120초)로 설정함
  */
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 10000, // 기본 타임아웃 (개별 요청의 timeout이 우선 적용됨)
   withCredentials: true, // 쿠키 기반 인증을 위한 설정
   headers: {
     'Content-Type': 'application/json',
@@ -139,7 +141,10 @@ export const endpoints = {
     detail: (id: number) => `/papers/${id}`,
     bookmarks: '/papers/bookmarks',
     toggleBookmark: (id: number) => `/papers/${id}/bookmark`,
+    searchHistory: '/papers/search-history',
   },
+  bookmarks: '/bookmarks',
+  userInterests: '/user-interests',
 };
 
 /**
@@ -218,6 +223,114 @@ export const logout = (): Promise<void> =>
   api.post('/auth/logout').then(() => undefined);
 
 /**
+ * 북마크 조회 API 함수
+ * 
+ * @returns Promise<BookmarksListResponse> - 북마크 목록
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - GET 요청
+ * - 응답 형식: BookmarkListItem[] 또는 { bookmarks: BookmarkListItem[] }
+ */
+export const fetchBookmarks = (): Promise<BookmarksListResponse> =>
+  api.get<BookmarksListResponse>(endpoints.bookmarks).then(res => res.data);
+
+/**
+ * 관심 카테고리 조회 API 함수
+ * 
+ * @returns Promise<UserInterestsResponse> - 사용자의 관심 카테고리 코드 배열
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - GET 요청
+ */
+export const fetchUserInterests = (): Promise<UserInterestsResponse> =>
+  api.get<UserInterestsResponse>(endpoints.userInterests).then(res => res.data);
+
+/**
+ * 검색 기록 조회 API 함수
+ * 
+ * @param userId - 사용자 ID
+ * @param limit - 조회할 검색 기록 개수 (기본값: 20)
+ * @returns Promise<SearchHistoryResponse> - 검색 기록 배열
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - GET 요청
+ * - params: { user_id: string, limit: number }
+ */
+export const fetchSearchHistory = (userId: string, limit: number = 20): Promise<SearchHistoryResponse> =>
+  api.get<SearchHistoryResponse>(endpoints.papers.searchHistory, {
+    params: { user_id: userId, limit },
+  }).then(res => res.data);
+
+/**
+ * 북마크 추가 API 함수
+ * 
+ * @param paperId - 논문 ID (문자열)
+ * @param notes - 북마크 메모 (선택)
+ * @returns Promise<AddBookmarkResponse> - 북마크 추가 결과
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - JSON 형식으로 전송
+ * - body: { "paper_id": string, "notes"?: string }
+ */
+export const addBookmark = (paperId: string, notes?: string): Promise<AddBookmarkResponse> => {
+  const body: AddBookmarkRequest = {
+    paper_id: paperId,
+  };
+  
+  if (notes) {
+    body.notes = notes;
+  }
+  
+  return api.post<AddBookmarkResponse>(endpoints.bookmarks, body).then(res => res.data);
+};
+
+/**
+ * 북마크 삭제 API 함수
+ * 
+ * @param bookmarkId - 북마크 ID
+ * @returns Promise<void> - 성공 시 아무 값도 반환하지 않음
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - DELETE 요청
+ */
+export const deleteBookmark = (bookmarkId: string): Promise<void> =>
+  api.delete(`${endpoints.bookmarks}/${bookmarkId}`).then(() => undefined);
+
+/**
+ * 북마크 수정 API 함수
+ * 
+ * @param bookmarkId - 북마크 ID
+ * @param notes - 수정할 메모
+ * @returns Promise<UpdateBookmarkResponse> - 북마크 수정 결과
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - PUT 요청
+ * - body: { "notes": string }
+ */
+export const updateBookmark = (bookmarkId: string, notes: string): Promise<UpdateBookmarkResponse> =>
+  api.put<UpdateBookmarkResponse>(`${endpoints.bookmarks}/${bookmarkId}`, { notes }).then(res => res.data);
+
+/**
+ * 관심 카테고리 추가 API 함수
+ * 
+ * @param categoryCodes - 추가할 카테고리 코드 배열 (예: ["cs.AI", "cs.LG"])
+ * @returns Promise<void> - 성공 시 아무 값도 반환하지 않음
+ * 
+ * 주의사항:
+ * - Authorization 헤더 필요
+ * - JSON 형식으로 전송
+ * - body: { "category_codes": string[] }
+ */
+export const addUserInterests = (categoryCodes: string[]): Promise<void> =>
+  api.post(endpoints.userInterests, { category_codes: categoryCodes }).then(() => undefined);
+
+/**
  * ============================================
  * 타입 정의
  * ============================================
@@ -260,6 +373,7 @@ export interface User {
  * @property categories - 카테고리 배열 (선택)
  * @property externalUrl - 외부 링크 (선택)
  * @property translatedSummary - 번역된 요약 (선택)
+ * @property update_count - 업데이트 횟수 (선택)
  */
 export interface Paper {
   id: number;
@@ -272,6 +386,7 @@ export interface Paper {
   categories?: string[];
   externalUrl?: string;
   translatedSummary?: string;
+  update_count?: number; // 업데이트 횟수
 }
 
 /**
@@ -298,4 +413,110 @@ export interface SearchPapersResponse {
 export interface BookmarkResponse {
   paperId: number;
   isBookmarked: boolean;
+}
+
+/**
+ * 북마크 추가 요청 타입
+ * 
+ * @property paper_id - 논문 ID (문자열)
+ * @property notes - 북마크 메모 (선택)
+ */
+export interface AddBookmarkRequest {
+  paper_id: string;
+  notes?: string;
+}
+
+/**
+ * 북마크 추가 응답 타입
+ * 
+ * 서버 응답 형식에 맞게 조정 필요
+ */
+export interface AddBookmarkResponse {
+  message?: string;
+  bookmark?: {
+    id: string;
+    paper_id: string;
+    notes?: string;
+    created_at?: string;
+  };
+}
+
+/**
+ * 북마크 조회 응답 아이템 타입
+ * 
+ * @property paper_id - 논문 ID
+ * @property notes - 북마크 메모 (선택)
+ * @property id - 북마크 ID (선택, 서버에서 제공하는 경우)
+ */
+export interface BookmarkListItem {
+  paper_id: string;
+  notes?: string;
+  id?: string;
+}
+
+/**
+ * 북마크 조회 응답 타입
+ * 
+ * 서버 응답 형식에 맞게 조정 필요
+ * - 배열 형식: BookmarkListItem[]
+ * - 또는 객체 형식: { bookmarks: BookmarkListItem[] }
+ */
+export type BookmarksListResponse = BookmarkListItem[] | { bookmarks: BookmarkListItem[] };
+
+/**
+ * 북마크 아이템 타입 (논문 정보 포함)
+ * 
+ * @property id - 북마크 ID
+ * @property paper_id - 논문 ID
+ * @property notes - 북마크 메모 (선택)
+ * @property paper - 논문 정보 (또는 논문 ID만 있을 수 있음)
+ */
+export interface BookmarkItem {
+  id: string;
+  paper_id: string;
+  notes?: string;
+  paper?: Paper;
+  // 또는 논문 정보가 별도로 올 수 있음
+}
+
+/**
+ * 북마크 수정 응답 타입
+ * 
+ * 서버 응답 형식에 맞게 조정 필요
+ */
+export interface UpdateBookmarkResponse {
+  message?: string;
+  bookmark?: {
+    id: string;
+    paper_id: string;
+    notes?: string;
+    updated_at?: string;
+  };
+}
+
+/**
+ * 검색 기록 조회 응답 타입
+ * 
+ * @property papers - 검색 기록에 포함된 논문 배열
+ */
+export interface SearchHistoryResponse {
+  papers: Paper[];
+}
+
+/**
+ * 관심 카테고리 조회 응답 타입
+ * 
+ * @property category_codes - 카테고리 코드 배열
+ */
+export interface UserInterestsResponse {
+  category_codes: string[];
+}
+
+/**
+ * 관심 카테고리 요청 타입
+ * 
+ * @property category_codes - 카테고리 코드 배열
+ */
+export interface UserInterestsRequest {
+  category_codes: string[];
 }
