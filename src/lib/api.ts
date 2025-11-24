@@ -130,6 +130,10 @@ export const fetchMyProfile = (): Promise<UserProfile> =>
 export const logout = (): Promise<void> =>
   api.post('/auth/logout').then(() => undefined);
 
+// 회원 탈퇴
+export const quitAccount = (): Promise<void> =>
+  api.delete('/auth/quit').then(() => undefined);
+
 // 논문 관련 API 함수
 
 // 논문 검색
@@ -138,14 +142,15 @@ export const searchPapers = (
   page: number = 1,
   categories?: string | string[]
 ): Promise<SearchPapersResponse> => {
-  const params: Record<string, string | number | string[]> = {
+  const params: Record<string, string | number> = {
     q,
     page,
   };
   
   if (categories) {
     if (Array.isArray(categories)) {
-      params.categories = categories;
+      // 배열을 쉼표 구분 문자열로 변환
+      params.categories = categories.join(',');
     } else {
       params.categories = categories;
     }

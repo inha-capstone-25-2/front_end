@@ -11,12 +11,16 @@ export function useNavigation() {
     searchParams,
     goToLogin: () => navigate('/login'),
     goToSignup: () => navigate('/signup'),
-    goToHome: () => navigate('/'),
+    goToHome: () => {
+      // 메인 페이지로 이동하면서 새로고침
+      window.location.href = '/';
+    },
     goToService: () => navigate('/intro'),
     goToGuide: () => navigate('/guide'),
     goToMyPage: () => navigate('/mypage'),
     goToRecentPapers: () => navigate('/recent'),
     goToMyLibrary: () => navigate('/library'),
+    goToQuitAccount: () => navigate('/quit'),
     goToPaper: (paperId: string | number) => navigate(`/paper/${paperId}`),
     goToSearch: (query: string) => navigate(`/search?q=${encodeURIComponent(query)}`),
     goBack: () => navigate(-1),

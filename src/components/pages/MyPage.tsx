@@ -33,7 +33,7 @@ export function MyPage() {
   
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const updateUserId = useAuthStore((state) => state.updateUserId);
-  const { goToRecentPapers, goToMyLibrary } = useNavigation();
+  const { goToRecentPapers, goToMyLibrary, goToQuitAccount } = useNavigation();
 
   // 사용자 프로필 정보 가져오기
   const { data: profile, isLoading, isError } = useMyProfileQuery();
@@ -426,6 +426,19 @@ export function MyPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* 회원 탈퇴 버튼 */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <Button
+                variant="outline"
+                className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+                onClick={goToQuitAccount}
+              >
+                회원 탈퇴
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </main>
       <Footer />

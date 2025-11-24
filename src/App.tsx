@@ -14,6 +14,7 @@ import { UserGuidePage } from './components/pages/UserGuidePage';
 import { MyPage } from './components/pages/MyPage';
 import { RecentlyViewedListPage } from './components/pages/RecentlyViewedListPage';
 import { MyLibraryPage } from './components/pages/MyLibraryPage';
+import { QuitAccountPage } from './components/pages/QuitAccountPage';
 import { Toaster } from './components/ui/sonner';
 import { ScrollToTop } from './components/ScrollToTop';
 
@@ -39,6 +40,7 @@ function AppContent() {
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/recent" element={<RecentlyViewedListPage />} />
         <Route path="/library" element={<MyLibraryPage />} />
+        <Route path="/quit" element={<QuitAccountPage />} />
       </Routes>
     </BrowserRouter>
   );
