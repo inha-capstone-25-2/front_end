@@ -11,6 +11,43 @@ import { usePaperActions } from '../../hooks/usePaperActions';
 import { useAppStore } from '../../store/useAppStore';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
+import { Paper } from '../../lib/api';
+
+// 추천 논문 Mock Data
+const mockRecommendedPapers: Paper[] = [
+  {
+    id: 'mock-1',
+    title: 'Transformer-based Language Models for Natural Language Understanding',
+    authors: 'Smith, J., Johnson, A., Williams, B.',
+    categories: ['cs.AI', 'cs.CL'],
+    update_date: '2024-01-15',
+    abstract: 'This paper presents a comprehensive study on transformer-based language models and their applications in natural language understanding tasks.',
+  },
+  {
+    id: 'mock-2',
+    title: 'Deep Learning Approaches to Computer Vision',
+    authors: 'Chen, L., Kim, S., Patel, R.',
+    categories: ['cs.CV', 'cs.LG'],
+    update_date: '2024-01-10',
+    abstract: 'We explore various deep learning architectures for computer vision tasks including object detection, image classification, and semantic segmentation.',
+  },
+  {
+    id: 'mock-3',
+    title: 'Reinforcement Learning in Multi-Agent Systems',
+    authors: 'Anderson, M., Brown, K., Davis, P.',
+    categories: ['cs.MA', 'cs.AI'],
+    update_date: '2024-01-08',
+    abstract: 'This research investigates reinforcement learning strategies for coordinating multiple agents in complex environments.',
+  },
+  {
+    id: 'mock-4',
+    title: 'Neural Architecture Search for Efficient Models',
+    authors: 'Wilson, T., Martinez, C., Lee, H.',
+    categories: ['cs.LG', 'cs.NE'],
+    update_date: '2024-01-05',
+    abstract: 'We propose a novel neural architecture search method that efficiently discovers optimal network structures for specific tasks.',
+  },
+];
 
 export function PaperDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -107,14 +144,17 @@ export function PaperDetailPage() {
                 <Sparkles className="h-8 w-8" style={{ color: '#4FA3D1' }} />
               </div>
               <div className="flex-1">
+                {/* 제목 */}
                 <h1 className="text-2xl md:text-3xl font-bold mb-4" style={{ color: '#215285' }}>
                   {paper.title}
                 </h1>
+                
+                {/* 저자 */}
                 <div className="flex flex-wrap gap-4 text-gray-600 mb-4">
                   <span>{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</span>
-                  <span>{paper.year}</span>
-                  <span>{paper.publisher}</span>
                 </div>
+                
+                {/* 카테고리 */}
                 {paper.categories && paper.categories.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
                     {paper.categories.map((cat: string, idx: number) => (
@@ -128,12 +168,20 @@ export function PaperDetailPage() {
                     ))}
                   </div>
                 )}
+                
+                {/* 업데이트 날짜 */}
+                {paper.update_date && (
+                  <div className="text-sm text-gray-500 mb-4">
+                    업데이트: {paper.update_date}
+                  </div>
+                )}
               </div>
             </div>
 
             <Separator className="my-6" />
 
             <div className="space-y-6">
+              {/* 요약 (Abstract) */}
               {paper.abstract && (
                 <section>
                   <h2 className="text-xl font-semibold mb-3" style={{ color: '#215285' }}>
@@ -142,56 +190,6 @@ export function PaperDetailPage() {
                   <p className="text-gray-700 leading-relaxed">{paper.abstract}</p>
                 </section>
               )}
-
-              {paper.translatedSummary && (
-                <section>
-                  <h2 className="text-xl font-semibold mb-3" style={{ color: '#215285' }}>
-                    요약
-                  </h2>
-                  <p className="text-gray-700 leading-relaxed">{paper.translatedSummary}</p>
-                </section>
-              )}
-
-              {paper.keywords && paper.keywords.length > 0 && (
-                <section>
-                  <h2 className="text-xl font-semibold mb-3" style={{ color: '#215285' }}>
-                    Keywords
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {paper.keywords.map((keyword: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 rounded-md text-sm bg-gray-100 text-gray-700"
-                      >
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <div className="flex gap-4 pt-4">
-                {paper.externalUrl && (
-                  <a
-                    href={paper.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-2 rounded-md text-white transition-colors"
-                    style={{ backgroundColor: '#215285' }}
-                  >
-                    원문 보기
-                  </a>
-                )}
-                {isLoggedIn && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleBookmark(paper.id)}
-                    disabled={toggleBookmarkMutation.isPending}
-                  >
-                    {toggleBookmarkMutation.isPending ? '처리 중...' : isBookmarked ? '북마크 해제' : '북마크 추가'}
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -201,8 +199,38 @@ export function PaperDetailPage() {
               추천 논문
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 추천 논문은 별도 API가 필요하므로 일단 비워둠 */}
-              <p className="text-gray-500">추천 논문 기능은 준비 중입니다.</p>
+              {mockRecommendedPapers.map((recommendedPaper) => (
+                <div
+                  key={recommendedPaper.id}
+                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/paper/${recommendedPaper.id}`)}
+                >
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#215285' }}>
+                    {recommendedPaper.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-3">
+                    {recommendedPaper.authors}
+                  </p>
+                  {recommendedPaper.categories && recommendedPaper.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {recommendedPaper.categories.map((cat: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-1 rounded-full text-xs"
+                          style={{ backgroundColor: '#EAF4FA', color: '#4FA3D1' }}
+                        >
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {recommendedPaper.update_date && (
+                    <p className="text-xs text-gray-500">
+                      업데이트: {recommendedPaper.update_date}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         </div>

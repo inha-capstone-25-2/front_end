@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "../ui/input";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 import { toast } from "sonner";
 import { useAuthStore } from "../../store/authStore";
+import { useSearchHistory } from "../../hooks/api";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface HeroSectionProps {
   onSearch?: (query: string) => void;
@@ -12,8 +14,16 @@ interface HeroSectionProps {
 export function HeroSection({ onSearch }: HeroSectionProps) {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const [searchValue, setSearchValue] = useState("");
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
+  const queryClient = useQueryClient();
+  
+  // 백엔드에서 검색 기록 가져오기
+  const { data: searchHistoryData, isLoading: isLoadingHistory } = useSearchHistory(undefined, 8);
+  
+  // 검색어 키워드만 추출
+  const recentSearches = useMemo(() => {
+    if (!searchHistoryData) return [];
+    return searchHistoryData.map(item => item.query).filter(Boolean);
+  }, [searchHistoryData]);
 
   const handleSearch = () => {
     if (!searchValue.trim()) {
@@ -28,16 +38,10 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
     }
 
     const trimmedValue = searchValue.trim();
-    setHasSearched(true);
-
-    if (!recentSearches.includes(trimmedValue)) {
-      const newSearches = [trimmedValue, ...recentSearches];
-      // 검색창 길이를 기준으로 최대 개수 제한 (약 8개)
-      if (newSearches.length > 8) {
-        newSearches.pop();
-      }
-      setRecentSearches(newSearches);
-    }
+    
+    // 검색 기록 갱신 (백엔드에 저장됨)
+    queryClient.invalidateQueries({ queryKey: ['searchHistory'] });
+    
     if (onSearch) {
       onSearch(trimmedValue);
     }
@@ -50,7 +54,9 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
   };
 
   const removeSearch = (searchToRemove: string) => {
-    setRecentSearches(recentSearches.filter((s) => s !== searchToRemove));
+    // 프론트에서만 제거 (백엔드 삭제 API가 있다면 추가 가능)
+    // 현재는 UI에서만 제거하고, 새로고침 시 다시 나타날 수 있음
+    queryClient.invalidateQueries({ queryKey: ['searchHistory'] });
   };
 
   const handleRecentSearchClick = (search: string) => {
@@ -108,30 +114,36 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
             </div>
 
             {/* Recent Searches */}
-            {hasSearched && recentSearches.length > 0 && (
+            {isLoggedIn && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500 whitespace-nowrap">최근 검색:</span>
-                <ScrollArea className="w-full">
-                  <div className="flex gap-2 pb-2">
-                    {recentSearches.map((search, index) => (
-                      <button
-                        key={index}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 whitespace-nowrap transition-colors"
-                        onClick={() => handleRecentSearchClick(search)}
-                      >
-                        {search}
-                        <X
-                          className="h-3 w-3 hover:text-red-500"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeSearch(search);
-                          }}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                {isLoadingHistory ? (
+                  <span className="text-sm text-gray-400">로딩 중...</span>
+                ) : recentSearches.length > 0 ? (
+                  <ScrollArea className="w-full max-h-[40px]">
+                    <div className="flex gap-2 pb-2 pr-2">
+                      {recentSearches.map((search, index) => (
+                        <button
+                          key={index}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 whitespace-nowrap transition-colors flex-shrink-0"
+                          onClick={() => handleRecentSearchClick(search)}
+                        >
+                          {search}
+                          <X
+                            className="h-3 w-3 hover:text-red-500"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSearch(search);
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                ) : (
+                  <span className="text-sm text-gray-400">검색 기록이 없습니다</span>
+                )}
               </div>
             )}
           </div>

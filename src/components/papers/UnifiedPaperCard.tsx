@@ -94,7 +94,10 @@ export function UnifiedPaperCard({
   // Search variant: 검색 결과 형태
   if (variant === 'search') {
     return (
-      <Card className={`transition-shadow hover:shadow-md relative ${className || ''}`}>
+      <Card 
+        className={`transition-shadow hover:shadow-md relative cursor-pointer ${className || ''}`}
+        onClick={handleCardClick}
+      >
         <CardContent className="p-4 md:p-6">
           {renderBookmark()}
 
@@ -111,7 +114,11 @@ export function UnifiedPaperCard({
 
             {/* Right: Content */}
             <div className="flex-1 min-w-0 space-y-3">
-              <h3 className="line-clamp-2" style={{ color: '#215285' }}>
+              <h3 
+                className="line-clamp-2 cursor-pointer hover:text-[#4FA3D1] transition-colors" 
+                style={{ color: '#215285' }}
+                onClick={handleCardClick}
+              >
                 {title}
               </h3>
 
@@ -180,8 +187,10 @@ export function UnifiedPaperCard({
   // Compact variant: 컴팩트 형태
   if (variant === 'compact') {
     return (
-      <Card className={`transition-all hover:shadow-md hover:border-[#4FA3D1] ${className || ''}`}>
+      <Card className={`transition-all hover:shadow-md hover:border-[#4FA3D1] relative ${className || ''}`}>
         <CardContent className="p-4 md:p-5">
+          {renderBookmark()}
+          
           <div className="flex gap-4">
             {/* Left: Icon */}
             <div className="flex-shrink-0">

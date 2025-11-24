@@ -19,7 +19,7 @@ export function usePaperActions() {
     goToPaper(paperId);
   };
 
-  const handleBookmark = (paperId: number, notes?: string) => {
+  const handleBookmark = (paperId: number | string, notes?: string) => {
     if (!isLoggedIn) {
       toast.error('로그인이 필요합니다', {
         description: '북마크 기능을 사용하려면 로그인해주세요.',
@@ -28,8 +28,22 @@ export function usePaperActions() {
       return;
     }
     
-    // 논문 ID를 문자열로 변환
-    const paperIdString = String(paperId);
+    // 논문 ID를 문자열로 변환 (이미 문자열이면 그대로 사용)
+    const paperIdString = typeof paperId === 'string' ? paperId.trim() : String(paperId);
+    
+    // 유효성 검증
+    if (!paperIdString || paperIdString === '') {
+      toast.error('유효하지 않은 논문 ID입니다.');
+      return;
+    }
+    
+    // 디버깅: paperId 타입과 값 확인
+    console.log('=== 북마크 디버깅 ===');
+    console.log('원본 paperId:', paperId);
+    console.log('paperId 타입:', typeof paperId);
+    console.log('변환된 paperIdString:', paperIdString);
+    console.log('paperIdString 길이:', paperIdString.length);
+    console.log('========================');
     
     // 북마크 목록에서 해당 논문의 북마크 찾기
     const bookmark = bookmarks.find(b => {
@@ -39,9 +53,14 @@ export function usePaperActions() {
     
     if (bookmark) {
       // 이미 북마크된 경우 삭제
-      deleteBookmarkMutation.mutate(bookmark.id);
+      if (bookmark.id) {
+        deleteBookmarkMutation.mutate(bookmark.id);
+      } else {
+        toast.error('북마크 ID를 찾을 수 없습니다.');
+      }
     } else {
       // 북마크되지 않은 경우 추가
+      console.log('북마크 추가 요청:', { paperId: paperIdString, notes });
       addBookmarkMutation.mutate({ paperId: paperIdString, notes });
     }
   };

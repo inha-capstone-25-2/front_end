@@ -146,6 +146,8 @@ export function MyLibraryPage() {
                               publisher={paper.publisher}
                               variant="compact"
                               onPaperClick={handlePaperClick}
+                              onToggleBookmark={handleBookmark}
+                              isBookmarked={true}
                             />
                           </div>
                           <Button

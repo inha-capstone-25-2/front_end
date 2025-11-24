@@ -17,16 +17,25 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { usePaperActions } from '../../hooks/usePaperActions';
 import { useAuthStore } from '../../store/authStore';
 import { useMyProfileQuery } from '../../hooks/api/useMyProfile';
-import { useSearchHistoryQuery } from '../../hooks/api/usePapers';
+import { useSearchHistoryQuery, useBookmarksQuery } from '../../hooks/api/usePapers';
 
 const ITEMS_PER_PAGE = 10;
 
 export function RecentlyViewedListPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const { handlePaperClick } = usePaperActions();
+  const { handlePaperClick, handleBookmark } = usePaperActions();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const { data: profile } = useMyProfileQuery();
   const userId = profile?.id || null;
+  const { data: bookmarks = [] } = useBookmarksQuery();
+  
+  // 북마크 상태 확인 함수
+  const isBookmarked = (paperId: string | number) => {
+    return bookmarks.some(b => {
+      const bookmarkPaperId = b.paper_id || (b.paper?.id ? String(b.paper.id) : null);
+      return bookmarkPaperId === String(paperId);
+    });
+  };
 
   // 검색 기록 조회 (20개)
   const { data: searchHistoryData, isLoading, isError, error } = useSearchHistoryQuery(
@@ -120,6 +129,8 @@ export function RecentlyViewedListPage() {
                     publisher={paper.publisher}
                     variant="compact"
                     onPaperClick={handlePaperClick}
+                    onToggleBookmark={handleBookmark}
+                    isBookmarked={isBookmarked(paper.id)}
                   />
                 );
               })

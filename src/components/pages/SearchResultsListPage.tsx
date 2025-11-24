@@ -18,7 +18,7 @@ import {
 } from '../ui/pagination';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Button } from '../ui/button';
-import { useSearchPapersQuery, SearchPapersParams } from '../../hooks/api';
+import { useSearchPapersQuery, SearchPapersParams, useBookmarksQuery } from '../../hooks/api';
 import { usePaperActions } from '../../hooks/usePaperActions';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -41,9 +41,18 @@ export function SearchResultsListPage() {
   }, [pageParam]);
   
   const [elapsedTime, setElapsedTime] = useState(0);
-  const { handlePaperClick } = usePaperActions();
+  const { handlePaperClick, handleBookmark } = usePaperActions();
   const queryClient = useQueryClient();
   const loadingStartTime = useRef<number | null>(null);
+  const { data: bookmarks = [] } = useBookmarksQuery();
+  
+  // 북마크 상태 확인 함수
+  const isBookmarked = (paperId: string | number) => {
+    return bookmarks.some(b => {
+      const bookmarkPaperId = b.paper_id || (b.paper?.id ? String(b.paper.id) : null);
+      return bookmarkPaperId === String(paperId);
+    });
+  };
 
   // API 호출 파라미터 구성 (메모이제이션으로 불필요한 재생성 방지)
   const searchParams_obj: SearchPapersParams = useMemo(() => ({
@@ -259,9 +268,6 @@ export function SearchResultsListPage() {
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin mb-4" style={{ color: '#4FA3D1' }} />
                   <p className="text-gray-600 mb-2">검색 중입니다. 잠시만 기다려주세요...</p>
-                  <p className="text-sm text-gray-500 mb-1">
-                    응답에 시간이 걸릴 수 있습니다. (약 2-3분 소요 예상)
-                  </p>
                   {elapsedTime > 0 && (
                     <p className="text-xs text-gray-400">
                       경과 시간: {Math.floor(elapsedTime / 60)}분 {elapsedTime % 60}초
@@ -377,6 +383,8 @@ export function SearchResultsListPage() {
                             categories={paper.categories}
                             variant="search"
                             onPaperClick={handlePaperClick}
+                            onToggleBookmark={handleBookmark}
+                            isBookmarked={isBookmarked(paper.id)}
                           />
                         );
                       })

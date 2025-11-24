@@ -1,29 +1,9 @@
-/**
- * 로그아웃 뮤테이션 훅
- * 
- * 이 파일은 로그아웃 기능을 위한 React Query 뮤테이션 훅을 정의합니다.
- * - useLogoutMutation: 로그아웃 API 호출 및 상태 초기화
- */
-
+// 로그아웃 뮤테이션 훅
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { logout as logoutAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 
-/**
- * 로그아웃 뮤테이션 훅
- * 
- * @returns React Query 뮤테이션 객체
- * 
- * 기능:
- * - 로그아웃 API 호출 (POST /auth/logout)
- * - 성공/실패 여부와 관계없이 클라이언트 상태 초기화
- * - 메인 페이지(/)로 이동
- * 
- * 주의사항:
- * - 에러가 발생해도 클라이언트 상태는 항상 초기화됨
- * - 서버와의 통신 실패 시에도 로그아웃 처리
- */
 export const useLogoutMutation = () => {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
@@ -31,15 +11,13 @@ export const useLogoutMutation = () => {
   return useMutation({
     mutationFn: logoutAPI,
     onSuccess: () => {
-      logout(); // 상태 초기화 및 토큰 삭제
-      navigate('/'); // 메인 화면으로 이동
+      logout();
+      navigate('/');
     },
     onError: (error) => {
-      // 에러가 발생해도 클라이언트 상태는 초기화
       logout();
-      navigate('/'); // 메인 화면으로 이동
+      navigate('/');
       console.error('Logout error:', error);
     },
   });
 };
-
