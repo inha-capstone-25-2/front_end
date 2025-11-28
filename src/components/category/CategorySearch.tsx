@@ -21,7 +21,7 @@ interface Category {
   subCategories: SubCategory[];
 }
 
-interface CategorySelectorProps {
+interface CategorySearchProps {
   onCategorySelect: (categoryCode: string) => void;
 }
 
@@ -116,7 +116,7 @@ const categories: Category[] = [
   },
 ];
 
-export function CategorySelector({ onCategorySelect }: CategorySelectorProps) {
+export function CategorySearch({ onCategorySelect }: CategorySearchProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>('ai');
 
   const handleCategoryClick = (categoryId: string) => {
@@ -133,7 +133,7 @@ export function CategorySelector({ onCategorySelect }: CategorySelectorProps) {
         {/* Header with Icon and Title */}
         <div className="flex items-center gap-3 mb-8">
           <Heart className="h-7 w-7" style={{ color: '#4FA3D1' }} />
-          <h2 className="text-[28px]">관심 카테고리 선택</h2>
+          <h2 className="text-[28px]">카테고리로 검색</h2>
         </div>
 
         {/* Main Card Container */}
@@ -234,3 +234,5 @@ export function CategorySelector({ onCategorySelect }: CategorySelectorProps) {
     </section>
   );
 }
+
+

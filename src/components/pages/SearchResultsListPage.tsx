@@ -4,7 +4,7 @@ import { X, Loader2, RefreshCw } from 'lucide-react';
 import { Header } from '../layout/Header';
 import { SearchHeader } from '../layout/SearchHeader';
 import { UnifiedPaperCard } from '../papers/UnifiedPaperCard';
-import { CategoryFilter, getCategoryNameByCode } from '../filters/CategoryFilter';
+import { CategoryFilter, getCategoryNameByCode } from '../category/CategoryFilter';
 import { Footer } from '../layout/Footer';
 import { ScrollToTopButton } from '../layout/ScrollToTopButton';
 import { PaginationControls } from '../ui/PaginationControls';

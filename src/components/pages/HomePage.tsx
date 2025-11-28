@@ -1,7 +1,7 @@
 import { Header } from '../layout/Header';
 import { HeroSection } from '../layout/HeroSection';
 import { RecentlyViewedPapers } from '../papers/RecentlyViewedPapers';
-import { CategorySelector } from '../filters/CategorySelector';
+import { CategorySearch } from '../category/CategorySearch';
 import { PopularPapers } from '../papers/PopularPapers';
 import { Footer } from '../layout/Footer';
 import { ScrollToTopButton } from '../layout/ScrollToTopButton';
@@ -42,7 +42,7 @@ export function HomePage() {
           bookmarkedPaperIds={bookmarkedPaperIds.map(id => parseInt(id))}
           onToggleBookmark={handleBookmark}
         />
-        <CategorySelector onCategorySelect={handleCategorySelect} />
+        <CategorySearch onCategorySelect={handleCategorySelect} />
         <PopularPapers 
           bookmarkedPaperIds={bookmarkedPaperIds.map(id => parseInt(id))}
           onToggleBookmark={handleBookmark}

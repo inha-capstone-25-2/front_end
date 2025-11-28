@@ -51,7 +51,7 @@ export function MyLibraryPage() {
   });
 
   // 논문 정보를 가져온 결과를 북마크에 병합
-  const enrichedBookmarks: BookmarkItem[] = bookmarks.map((bookmark, index) => {
+  const enrichedBookmarks: BookmarkItem[] = bookmarks.map((bookmark) => {
     if (bookmark.paper) {
       return bookmark; // 이미 논문 정보가 있으면 그대로 사용
     }
@@ -89,10 +89,16 @@ export function MyLibraryPage() {
     switch (sortBy) {
       case 'title':
         return a.title.localeCompare(b.title);
-      case 'year':
-        const yearA = typeof a.year === 'string' ? parseInt(a.year) : a.year;
-        const yearB = typeof b.year === 'string' ? parseInt(b.year) : b.year;
-        return yearB - yearA;
+      case 'year': {
+        const yearA = a.year != null ? Number(a.year) : 0;
+        const yearB = b.year != null ? Number(b.year) : 0;
+
+        // 유효한 숫자가 아니면 정렬에 영향을 주지 않도록 0으로 처리
+        const safeYearA = Number.isNaN(yearA) ? 0 : yearA;
+        const safeYearB = Number.isNaN(yearB) ? 0 : yearB;
+
+        return safeYearB - safeYearA;
+      }
       case 'recent':
       default:
         return 0; // 최근 추가 순 (현재는 ID 순)

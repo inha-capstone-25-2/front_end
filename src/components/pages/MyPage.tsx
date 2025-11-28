@@ -15,7 +15,7 @@ import { useUsernameExistsQuery } from '../../hooks/api/useUsernameExists';
 import { useMyProfileQuery } from '../../hooks/api/useMyProfile';
 import { UserProfile } from '../../types/auth';
 import { useLogoutMutation } from '../../hooks/api/useLogout';
-import { InterestCategorySelector } from '../filters/InterestCategorySelector';
+import { UserInterestCategory } from '../category/UserInterestCategory';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -396,7 +396,7 @@ export function MyPage() {
           </Card>
 
           {/* 관심 카테고리 선택 */}
-          <InterestCategorySelector />
+          <UserInterestCategory />
 
           {/* Quick Actions - 최근 본 논문과 내 서재만 표시 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

@@ -12,10 +12,10 @@ import { useMyProfileQuery } from '../../hooks/api/useMyProfile';
 import { useSearchHistoryQuery } from '../../hooks/api/usePapers';
 
 interface RecentlyViewedPapersProps {
-  onPaperClick?: (paperId: number) => void;
+  onPaperClick?: (paperId: string | number) => void;
   onViewAll?: () => void;
-  bookmarkedPaperIds?: number[];
-  onToggleBookmark?: (paperId: number) => void;
+  bookmarkedPaperIds?: Array<string | number>;
+  onToggleBookmark?: (paperId: string | number) => void;
 }
 
 export function RecentlyViewedPapers({ 

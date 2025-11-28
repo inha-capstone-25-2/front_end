@@ -46,11 +46,6 @@ export function usePaperDetailQuery(paperId: string | number, enabled: boolean =
   });
 }
 
-// 논문 상세 조회 별칭
-export function usePaperDetail(id: string) {
-  return usePaperDetailQuery(id, !!id);
-}
-
 // 추천 논문 조회
 // - paperId를 queryKey에 포함시켜 논문별로 캐시를 분리
 // - 상세 페이지에 진입할 때마다 항상 refetch 되도록 설정

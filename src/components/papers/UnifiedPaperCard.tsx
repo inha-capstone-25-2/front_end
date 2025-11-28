@@ -260,7 +260,12 @@ export function UnifiedPaperCard({
 
           {/* Summary */}
           {showSummary && summary && (
-            <p className="text-sm text-gray-600 line-clamp-3 mb-4">{summary}</p>
+            <p className="text-sm text-gray-600 line-clamp-3 mb-2">{summary}</p>
+          )}
+
+          {/* Translated Summary */}
+          {showTranslatedSummary && translatedSummary && (
+            <p className="text-sm text-gray-500 line-clamp-3 mb-4">{translatedSummary}</p>
           )}
 
           {/* 자세히 보기 링크 */}
@@ -312,7 +317,12 @@ export function UnifiedPaperCard({
 
             {/* Summary */}
             {showSummary && summary && (
-              <p className="text-sm text-gray-600 line-clamp-2 mb-3">{summary}</p>
+              <p className="text-sm text-gray-600 line-clamp-2 mb-1">{summary}</p>
+            )}
+
+            {/* Translated Summary */}
+            {showTranslatedSummary && translatedSummary && (
+              <p className="text-sm text-gray-500 line-clamp-2 mb-3">{translatedSummary}</p>
             )}
 
             {/* 자세히 보기 링크 */}

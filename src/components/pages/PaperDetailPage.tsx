@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Sparkles, Loader2, Bookmark } from 'lucide-react';
 import { Header } from '../layout/Header';
 import { SearchHeader } from '../layout/SearchHeader';
 import { Footer } from '../layout/Footer';
 import { Separator } from '../ui/separator';
 import { ScrollToTopButton } from '../layout/ScrollToTopButton';
-import { usePaperDetailQuery, useToggleBookmarkMutation, useBookmarksQuery, useRecommendationsQuery } from '../../hooks/api';
+import { usePaperDetailQuery, useBookmarksQuery, useRecommendationsQuery } from '../../hooks/api';
+import type { Paper } from '../../lib/api';
 import { usePaperActions } from '../../hooks/usePaperActions';
 import { useAppStore } from '../../store/useAppStore';
 import { Alert, AlertDescription } from '../ui/alert';
@@ -20,29 +21,30 @@ import { UnifiedPaperCard } from '../papers/UnifiedPaperCard';
 
 export function PaperDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   // 문자열 ID 그대로 사용 (API 명세에 맞춤)
   const paperId = id || '';
   const { isLoggedIn, handlePaperClick, handleBookmark } = usePaperActions();
-  const bookmarkedPaperIds = useAppStore((state) => state.bookmarkedPaperIds);
   const addRecentlyViewedPaper = useAppStore((state) => state.addRecentlyViewedPaper);
   const { data: bookmarks = [] } = useBookmarksQuery();
   
   const { data: paper, isLoading, isError, error } = usePaperDetailQuery(paperId, !!paperId);
-  const toggleBookmarkMutation = useToggleBookmarkMutation();
-  
   // 추천 논문 조회 (현재 상세 논문 ID 기준, 진입할 때마다 새로 요청)
   const { 
-    data: recommendedPapers = [], 
+    data: recommendedPapers,
     isLoading: isLoadingRecommendations,
     isError: isErrorRecommendations,
     error: errorRecommendations 
   } = useRecommendationsQuery(paperId, 6, true);
 
+  const typedRecommendedPapers: Paper[] = (recommendedPapers ?? []) as Paper[];
+
   // 논문이 로드되면 최근 조회 목록에 추가
   useEffect(() => {
     if (paper && isLoggedIn) {
-      addRecentlyViewedPaper(paper.id);
+      const numericId = typeof paper.id === 'string' ? Number(paper.id) : paper.id;
+      if (Number.isFinite(numericId)) {
+        addRecentlyViewedPaper(numericId as number);
+      }
     }
   }, [paper, isLoggedIn, addRecentlyViewedPaper]);
 
@@ -211,9 +213,9 @@ export function PaperDetailPage() {
                   </AlertDescription>
                 </Alert>
               </div>
-            ) : recommendedPapers.length > 0 ? (
+            ) : typedRecommendedPapers.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {recommendedPapers.map((recommendedPaper) => (
+                {typedRecommendedPapers.map((recommendedPaper: Paper) => (
                   <UnifiedPaperCard
                     key={recommendedPaper.id}
                     paperId={recommendedPaper.id}

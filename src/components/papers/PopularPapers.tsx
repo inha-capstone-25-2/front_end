@@ -90,8 +90,8 @@ const recentPapers = [
 
 interface PopularPapersProps {
   bookmarkedPaperIds?: number[];
-  onToggleBookmark?: (paperId: number) => void;
-  onPaperClick?: (paperId: number) => void;
+  onToggleBookmark?: (paperId: string | number) => void;
+  onPaperClick?: (paperId: string | number) => void;
 }
 
 export function PopularPapers({ bookmarkedPaperIds = [], onToggleBookmark, onPaperClick }: PopularPapersProps) {

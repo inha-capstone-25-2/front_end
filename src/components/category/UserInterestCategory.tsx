@@ -131,7 +131,7 @@ const categories: Category[] = [
 
 const MAX_SELECTIONS = 5;
 
-export function InterestCategorySelector() {
+export function UserInterestCategory() {
   const [selectedCategories, setSelectedCategories] = useState<SubCategory[]>([]);
   const [expandedCategory, setExpandedCategory] = useState<string | null>('ai-learning');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -474,3 +474,5 @@ export function InterestCategorySelector() {
     </Card>
   );
 }
+
+
