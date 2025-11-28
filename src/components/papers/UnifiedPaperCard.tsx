@@ -1,4 +1,4 @@
-import { FileText, User, BookOpen, ArrowRight, Bookmark, ExternalLink } from 'lucide-react';
+import { User, BookOpen, ArrowRight, Bookmark, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import {
@@ -94,93 +94,78 @@ export function UnifiedPaperCard({
   // Search variant: 검색 결과 형태
   if (variant === 'search') {
     return (
-      <Card 
-        className={`transition-shadow hover:shadow-md relative cursor-pointer ${className || ''}`}
+      <div 
+        className={`transition-shadow hover:shadow-md relative cursor-pointer bg-white rounded-lg border border-gray-200 p-4 md:p-6 ${className || ''}`}
         onClick={handleCardClick}
       >
-        <CardContent className="p-4 md:p-6">
-          {renderBookmark()}
+        {renderBookmark()}
 
-          <div className="flex gap-4">
-            {/* Left: Icon */}
-            <div className="flex-shrink-0">
-              <div
-                className="w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: '#EAF4FA' }}
-              >
-                <FileText className="h-8 w-8 md:h-10 md:w-10" style={{ color: '#4FA3D1' }} />
-              </div>
+        <div className="space-y-3">
+            <h3 
+              className="line-clamp-2 cursor-pointer hover:text-[#4FA3D1] transition-colors break-words" 
+              style={{ color: '#215285' }}
+              onClick={handleCardClick}
+            >
+              {title}
+            </h3>
+
+            {/* Authors */}
+            <div className="text-sm text-gray-600 break-words">
+              <span>{authorsText}</span>
             </div>
 
-            {/* Right: Content */}
-            <div className="flex-1 min-w-0 space-y-3">
-              <h3 
-                className="line-clamp-2 cursor-pointer hover:text-[#4FA3D1] transition-colors" 
-                style={{ color: '#215285' }}
-                onClick={handleCardClick}
-              >
-                {title}
-              </h3>
+            {/* Meta Info: update_count/update_date and categories */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Update Count or Update Date */}
+              {update_count !== undefined && update_count !== null ? (
+                <span className="text-sm text-gray-600">
+                  업데이트: {update_count}회
+                </span>
+              ) : update_date ? (
+                <span className="text-sm text-gray-600">
+                  업데이트: {update_date}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400">
+                  업데이트: -
+                </span>
+              )}
 
-              {/* Authors */}
-              <div className="text-sm text-gray-600">
-                <span>{authorsText}</span>
-              </div>
-
-              {/* Meta Info: update_count/update_date and categories */}
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Update Count or Update Date */}
-                {update_count !== undefined && update_count !== null ? (
-                  <span className="text-sm text-gray-600">
-                    업데이트: {update_count}회
-                  </span>
-                ) : update_date ? (
-                  <span className="text-sm text-gray-600">
-                    업데이트: {update_date}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400">
-                    업데이트: -
-                  </span>
-                )}
-
-                {/* Categories */}
-                {categories && categories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {categories.map((category, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                        style={{
-                          backgroundColor: '#EAF4FA',
-                          color: '#4FA3D1',
-                        }}
-                      >
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* View Original Button */}
-              {showExternalLink && externalUrl && (
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-[#215285] text-[#215285] hover:bg-[#215285] hover:text-white"
-                    onClick={() => window.open(externalUrl, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    원문 보기
-                  </Button>
+              {/* Categories */}
+              {categories && categories.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: '#EAF4FA',
+                        color: '#4FA3D1',
+                      }}
+                    >
+                      {category}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            {/* View Original Button */}
+            {showExternalLink && externalUrl && (
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#215285] text-[#215285] hover:bg-[#215285] hover:text-white"
+                  onClick={() => window.open(externalUrl, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  원문 보기
+                </Button>
+              </div>
+            )}
+        </div>
+      </div>
     );
   }
 
@@ -191,19 +176,7 @@ export function UnifiedPaperCard({
         <CardContent className="p-4 md:p-5">
           {renderBookmark()}
           
-          <div className="flex gap-4">
-            {/* Left: Icon */}
-            <div className="flex-shrink-0">
-              <div
-                className="w-12 h-12 md:w-14 md:h-14 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: '#EAF4FA' }}
-              >
-                <FileText className="h-6 w-6 md:h-7 md:w-7" style={{ color: '#4FA3D1' }} />
-              </div>
-            </div>
-
-            {/* Middle: Content */}
-            <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <div className="flex flex-col justify-between">
               <div>
                 <h3
                   className="line-clamp-2 mb-2 cursor-pointer hover:text-[#4FA3D1] transition-colors"
@@ -239,7 +212,6 @@ export function UnifiedPaperCard({
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -252,15 +224,6 @@ export function UnifiedPaperCard({
       <Card className={`transition-all hover:shadow-md hover:border-[#4FA3D1] relative ${className || ''}`}>
         <CardContent className="p-5 flex flex-col h-full">
           {renderBookmark()}
-
-          <div className="flex items-start mb-3">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: '#EAF4FA' }}
-            >
-              <FileText className="h-5 w-5" style={{ color: '#4FA3D1' }} />
-            </div>
-          </div>
 
           <h4
             onClick={handleCardClick}
@@ -297,19 +260,7 @@ export function UnifiedPaperCard({
       <CardContent className="p-4 md:p-6">
         {renderBookmark()}
 
-        <div className="flex gap-4">
-          {/* Left: Icon/Thumbnail */}
-          <div className="flex-shrink-0">
-            <div
-              className="w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: '#EAF4FA' }}
-            >
-              <FileText className="h-8 w-8 md:h-10 md:w-10" style={{ color: '#4FA3D1' }} />
-            </div>
-          </div>
-
-          {/* Right: Content */}
-          <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex flex-col">
             {/* 제목 - 클릭 가능한 링크 */}
             <h3
               onClick={handleCardClick}
@@ -352,7 +303,6 @@ export function UnifiedPaperCard({
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
         </div>
       </CardContent>
     </Card>

@@ -1,17 +1,23 @@
 import { useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Sparkles, Loader2, Bookmark } from 'lucide-react';
 import { Header } from '../layout/Header';
 import { SearchHeader } from '../layout/SearchHeader';
 import { Footer } from '../layout/Footer';
 import { Separator } from '../ui/separator';
 import { ScrollToTopButton } from '../layout/ScrollToTopButton';
-import { usePaperDetailQuery, useToggleBookmarkMutation } from '../../hooks/api';
+import { usePaperDetailQuery, useToggleBookmarkMutation, useBookmarksQuery } from '../../hooks/api';
 import { usePaperActions } from '../../hooks/usePaperActions';
 import { useAppStore } from '../../store/useAppStore';
-import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 import { Paper } from '../../lib/api';
+import { UnifiedPaperCard } from '../papers/UnifiedPaperCard';
 
 // 추천 논문 Mock Data
 const mockRecommendedPapers: Paper[] = [
@@ -51,14 +57,13 @@ const mockRecommendedPapers: Paper[] = [
 
 export function PaperDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   // 문자열 ID 그대로 사용 (API 명세에 맞춤)
   const paperId = id || '';
-  const searchQuery = searchParams.get('q') || '';
-  const { isLoggedIn } = usePaperActions();
+  const { isLoggedIn, handlePaperClick, handleBookmark } = usePaperActions();
   const bookmarkedPaperIds = useAppStore((state) => state.bookmarkedPaperIds);
   const addRecentlyViewedPaper = useAppStore((state) => state.addRecentlyViewedPaper);
+  const { data: bookmarks = [] } = useBookmarksQuery();
   
   const { data: paper, isLoading, isError, error } = usePaperDetailQuery(paperId, !!paperId);
   const toggleBookmarkMutation = useToggleBookmarkMutation();
@@ -70,16 +75,12 @@ export function PaperDetailPage() {
     }
   }, [paper, isLoggedIn, addRecentlyViewedPaper]);
 
-  const handleBack = () => {
-    if (searchQuery) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    } else {
-      navigate('/search');
-    }
-  };
-
-  const handleBookmark = (paperId: number) => {
-    toggleBookmarkMutation.mutate(paperId);
+  // 북마크 상태 확인 함수
+  const checkIsBookmarked = (paperId: string | number) => {
+    return bookmarks.some(b => {
+      const bookmarkPaperId = b.paper_id || (b.paper?.id ? String(b.paper.id) : null);
+      return bookmarkPaperId === String(paperId);
+    });
   };
 
   if (isLoading) {
@@ -110,9 +111,6 @@ export function PaperDetailPage() {
                 {error instanceof Error ? error.message : '논문 정보를 불러오는 중 오류가 발생했습니다.'}
               </AlertDescription>
             </Alert>
-            <Button onClick={handleBack} className="mt-4">
-              목록으로 돌아가기
-            </Button>
           </div>
         </main>
         <Footer />
@@ -120,7 +118,7 @@ export function PaperDetailPage() {
     );
   }
 
-  const isBookmarked = bookmarkedPaperIds.includes(String(paper.id));
+  const isBookmarked = checkIsBookmarked(paper.id);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -128,17 +126,34 @@ export function PaperDetailPage() {
       <SearchHeader onSearch={() => {}} />
       <main className="flex-1">
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 lg:px-10 py-8">
-          {/* Back Button */}
-          <button
-            onClick={handleBack}
-            className="mb-6 flex items-center gap-2 text-gray-600 hover:text-[#215285] transition-colors"
-          >
-            <span>←</span>
-            <span>목록으로 돌아가기</span>
-          </button>
-
           {/* Paper Detail */}
-          <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 mb-8 relative">
+            {/* 북마크 버튼 */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-all hover:scale-105 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBookmark(paper.id);
+                    }}
+                  >
+                    <Bookmark
+                      className="w-5 h-5 transition-colors"
+                      style={{
+                        color: isBookmarked ? '#4FA3D1' : '#ccc',
+                        fill: isBookmarked ? '#4FA3D1' : 'none',
+                      }}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isBookmarked ? '북마크 해제' : '북마크 추가'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <div className="flex items-start gap-4 mb-6">
               <div className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#EAF4FA' }}>
                 <Sparkles className="h-8 w-8" style={{ color: '#4FA3D1' }} />
@@ -181,8 +196,18 @@ export function PaperDetailPage() {
             <Separator className="my-6" />
 
             <div className="space-y-6">
-              {/* 요약 (Abstract) */}
-              {paper.abstract && (
+              {/* 요약 (Summary) */}
+              {paper.summary && (
+                <section>
+                  <h2 className="text-xl font-semibold mb-3" style={{ color: '#215285' }}>
+                    Summary
+                  </h2>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{paper.summary}</p>
+                </section>
+              )}
+              
+              {/* Abstract (Summary가 없을 경우 대체) */}
+              {!paper.summary && paper.abstract && (
                 <section>
                   <h2 className="text-xl font-semibold mb-3" style={{ color: '#215285' }}>
                     Abstract
@@ -200,36 +225,20 @@ export function PaperDetailPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {mockRecommendedPapers.map((recommendedPaper) => (
-                <div
+                <UnifiedPaperCard
                   key={recommendedPaper.id}
-                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/paper/${recommendedPaper.id}`)}
-                >
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#215285' }}>
-                    {recommendedPaper.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-3">
-                    {recommendedPaper.authors}
-                  </p>
-                  {recommendedPaper.categories && recommendedPaper.categories.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {recommendedPaper.categories.map((cat: string, idx: number) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 rounded-full text-xs"
-                          style={{ backgroundColor: '#EAF4FA', color: '#4FA3D1' }}
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {recommendedPaper.update_date && (
-                    <p className="text-xs text-gray-500">
-                      업데이트: {recommendedPaper.update_date}
-                    </p>
-                  )}
-                </div>
+                  paperId={recommendedPaper.id}
+                  title={recommendedPaper.title}
+                  authors={recommendedPaper.authors}
+                  categories={recommendedPaper.categories}
+                  update_date={recommendedPaper.update_date}
+                  variant="recommended"
+                  onPaperClick={handlePaperClick}
+                  onToggleBookmark={handleBookmark}
+                  isBookmarked={checkIsBookmarked(recommendedPaper.id)}
+                  showSummary={false}
+                  showBookmark={true}
+                />
               ))}
             </div>
           </section>

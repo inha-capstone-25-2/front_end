@@ -140,7 +140,8 @@ export const quitAccount = (): Promise<void> =>
 export const searchPapers = (
   q: string,
   page: number = 1,
-  categories?: string | string[]
+  categories?: string | string[],
+  sort_by?: string
 ): Promise<SearchPapersResponse> => {
   const params: Record<string, string | number> = {
     q,
@@ -154,6 +155,10 @@ export const searchPapers = (
     } else {
       params.categories = categories;
     }
+  }
+  
+  if (sort_by) {
+    params.sort_by = sort_by;
   }
   
   type ServerResponse = {
@@ -190,14 +195,14 @@ export const searchPapers = (
   });
 };
 
-// 논문 상세 조회 (임시 비활성화)
-export const getPaperDetail = (_paperId: string | number): Promise<Paper> => {
-  return Promise.reject(new Error('논문 상세 조회 기능이 임시로 비활성화되었습니다.'));
+// 논문 상세 조회
+export const getPaperDetail = (paperId: string | number): Promise<Paper> => {
+  return api.get<Paper>(endpoints.papers.detail(paperId)).then(response => response.data);
 };
 
-// 논문 상세 조회 별칭 (임시 비활성화)
-export const getPaperById = (_id: string): Promise<Paper> => {
-  return Promise.reject(new Error('논문 상세 조회 기능이 임시로 비활성화되었습니다.'));
+// 논문 상세 조회 별칭
+export const getPaperById = (id: string): Promise<Paper> => {
+  return getPaperDetail(id);
 };
 
 // 검색 기록 조회
@@ -266,9 +271,43 @@ export const getSearchHistory = (userId: number, limit: number = 20): Promise<Se
 
 // 북마크 관련 API 함수
 
-// 북마크 조회 (임시 비활성화)
-export const fetchBookmarks = (): Promise<BookmarksListResponse> => {
-  return Promise.resolve([]);
+// 북마크 조회
+export const fetchBookmarks = (): Promise<BookmarkItem[]> => {
+  return api.get<any>(endpoints.bookmarks).then(response => {
+    const data = response.data;
+    
+    // 응답이 { items: [...] } 형식인지 확인
+    let bookmarksArray: any[] = [];
+    if (Array.isArray(data)) {
+      bookmarksArray = data;
+    } else if (data && typeof data === 'object' && Array.isArray(data.items)) {
+      bookmarksArray = data.items;
+    } else {
+      return [];
+    }
+    
+    // 북마크 배열을 BookmarkItem 형식으로 변환
+    return bookmarksArray.map((item: any) => {
+      // doi를 paper_id로 사용 (paper의 _id가 doi이므로)
+      const paperId = item.doi || item.paper_id || '';
+      
+      return {
+        id: item._id || item.id || '',
+        paper_id: paperId,  // doi를 paper_id로 저장
+        notes: item.notes,
+        // 논문 정보가 포함된 경우 paper 필드에 설정
+        paper: item.paper ? {
+          id: item.paper._id || item.paper.id || paperId,
+          title: item.paper.title || '',
+          authors: item.paper.authors || '',
+          categories: item.paper.categories,
+          update_date: item.paper.update_date,
+          summary: item.paper.summary,
+          abstract: item.paper.abstract,
+        } : undefined,
+      } as BookmarkItem;
+    });
+  });
 };
 
 // 관심 카테고리 관련 API 함수
@@ -287,14 +326,36 @@ export const deleteInterestCategory = (code: string): Promise<void> =>
     params: { codes: code },
   }).then(() => undefined);
 
-// 북마크 추가 (임시 비활성화)
-export const addBookmark = (_paperId: string, _notes?: string): Promise<AddBookmarkResponse> => {
-  return Promise.reject(new Error('북마크 추가 기능이 임시로 비활성화되었습니다.'));
+// 북마크 추가
+export const addBookmark = (paperId: string, notes?: string): Promise<AddBookmarkResponse> => {
+  const body: AddBookmarkRequest = {
+    doi: paperId,  // paper.id가 DOI 값이므로 doi로 전달
+  };
+  
+  if (notes) {
+    body.notes = notes;
+  }
+  
+  return api.post<AddBookmarkResponse>(endpoints.bookmarks, body)
+    .then(response => response.data)
+    .catch((error: AxiosError) => {
+      // 서버 응답에서 에러 메시지 추출
+      if (error.response?.data) {
+        const errorData = error.response.data as any;
+        if (errorData.error) {
+          throw new Error(errorData.error);
+        }
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+      }
+      throw error;
+    });
 };
 
-// 북마크 삭제 (임시 비활성화)
-export const deleteBookmark = (_bookmarkId: string): Promise<void> => {
-  return Promise.reject(new Error('북마크 삭제 기능이 임시로 비활성화되었습니다.'));
+// 북마크 삭제
+export const deleteBookmark = (bookmarkId: string): Promise<void> => {
+  return api.delete(`${endpoints.bookmarks}/${bookmarkId}`).then(() => undefined);
 };
 
 // 북마크 수정 (임시 비활성화)
@@ -356,7 +417,7 @@ export interface BookmarkResponse {
 }
 
 export interface AddBookmarkRequest {
-  paper_id: string;
+  doi: string;
   notes?: string;
 }
 

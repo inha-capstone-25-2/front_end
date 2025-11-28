@@ -369,7 +369,7 @@ export function SearchResultsListPage() {
                     {currentPapers.length > 0 ? (
                       currentPapers.map((paper) => {
                         // 디버깅: 각 논문 렌더링 확인
-                        if (process.env.NODE_ENV === 'development') {
+                        if (import.meta.env.MODE === 'development') {
                           console.log('논문 렌더링:', paper.id, paper.title);
                         }
                         return (

@@ -9,6 +9,7 @@ export interface SearchPapersParams {
   q: string;
   categories?: string[];
   page?: number;
+  sort_by?: string;
 }
 
 // 논문 검색 쿼리
@@ -18,12 +19,13 @@ export function useSearchPapersQuery(params: SearchPapersParams, enabled: boolea
     : undefined;
   
   return useQuery({
-    queryKey: ['papers', 'search', params.q, categoriesKey, params.page],
+    queryKey: ['papers', 'search', params.q, categoriesKey, params.sort_by, params.page],
     queryFn: async (): Promise<SearchPapersResponse> => {
       return searchPapers(
         params.q,
         params.page || 1,
-        params.categories && params.categories.length > 0 ? params.categories : undefined
+        params.categories && params.categories.length > 0 ? params.categories : undefined,
+        params.sort_by
       );
     },
     enabled: enabled && !!params.q,
@@ -32,39 +34,33 @@ export function useSearchPapersQuery(params: SearchPapersParams, enabled: boolea
   });
 }
 
-// 논문 상세 조회 (임시 비활성화)
+// 논문 상세 조회
 export function usePaperDetailQuery(paperId: string | number, enabled: boolean = true) {
   return useQuery({
     queryKey: ['papers', 'detail', paperId],
     queryFn: async (): Promise<Paper> => {
-      throw new Error('논문 상세 조회 기능이 임시로 비활성화되었습니다.');
+      return getPaperDetail(paperId);
     },
-    enabled: false,
+    enabled: enabled && !!paperId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-// 논문 상세 조회 별칭 (임시 비활성화)
+// 논문 상세 조회 별칭
 export function usePaperDetail(id: string) {
-  return useQuery({
-    queryKey: ['paperDetail', id],
-    queryFn: () => {
-      return Promise.reject(new Error('논문 상세 조회 기능이 임시로 비활성화되었습니다.'));
-    },
-    enabled: false,
-  });
+  return usePaperDetailQuery(id, !!id);
 }
 
-// 북마크 목록 조회 (임시 비활성화)
+// 북마크 목록 조회
 export function useBookmarksQuery() {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   return useQuery({
     queryKey: ['bookmarks'],
     queryFn: async (): Promise<BookmarkItem[]> => {
-      return [];
+      return fetchBookmarks();
     },
-    enabled: false,
+    enabled: isLoggedIn,  // 로그인 상태일 때만 활성화
     staleTime: 1 * 60 * 1000,
   });
 }
@@ -128,34 +124,110 @@ export function useToggleBookmarkMutation() {
   });
 }
 
-// 북마크 추가 (임시 비활성화)
+// 북마크 추가
 export function useAddBookmarkMutation() {
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   return useMutation({
     mutationFn: async ({ paperId, notes }: { paperId: string; notes?: string }): Promise<AddBookmarkResponse> => {
-      throw new Error('북마크 추가 기능이 임시로 비활성화되었습니다.');
+      if (!isLoggedIn) {
+        toast.error('로그인이 필요합니다', {
+          description: '북마크 기능을 사용하려면 로그인해주세요.',
+        });
+        throw new Error('Not logged in');
+      }
+      
+      return addBookmark(paperId, notes);
     },
-    onSuccess: () => {},
-    onError: () => {
-      console.log('북마크 추가 기능이 비활성화되어 있습니다.');
+    onMutate: async ({ paperId, notes }) => {
+      // 진행 중인 쿼리 취소
+      await queryClient.cancelQueries({ queryKey: ['bookmarks'] });
+      
+      // 이전 북마크 목록 저장 (롤백용)
+      const previousBookmarks = queryClient.getQueryData<BookmarkItem[]>(['bookmarks']);
+      
+      // Optimistic update: 북마크 목록에 임시로 추가
+      if (previousBookmarks) {
+        const newBookmark: BookmarkItem = {
+          id: `temp-${paperId}`,  // 임시 ID
+          paper_id: paperId,
+          notes: notes,
+        };
+        
+        queryClient.setQueryData<BookmarkItem[]>(['bookmarks'], (old = []) => {
+          // 이미 존재하는지 확인
+          const exists = old.some(b => b.paper_id === paperId);
+          if (exists) {
+            return old;  // 이미 있으면 추가하지 않음
+          }
+          return [...old, newBookmark];
+        });
+      }
+      
+      return { previousBookmarks };
+    },
+    onSuccess: (data, { paperId }) => {
+      toast.success('북마크가 추가되었습니다', {
+        description: '내 서재에서 확인할 수 있습니다.',
+      });
+      
+      // 북마크 목록 및 검색 결과 무효화하여 최신 데이터 가져오기
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['papers', 'search'] });
+    },
+    onError: (error: Error, variables, context) => {
+      // 에러 발생 시 이전 상태로 롤백
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(['bookmarks'], context.previousBookmarks);
+      }
+      
+      // 에러 메시지에서 중복 북마크 확인
+      const errorMessage = error.message || '';
+      if (errorMessage.includes('already exists') || 
+          errorMessage.includes('Bookmark already exists') ||
+          errorMessage.includes('duplicate')) {
+        toast.error('이미 북마크된 논문입니다', {
+          description: '내 서재에서 확인할 수 있습니다.',
+        });
+        // 북마크 목록을 갱신하여 UI 동기화
+        queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
+      } else {
+        toast.error('북마크 추가 실패', {
+          description: errorMessage || '다시 시도해주세요.',
+        });
+      }
     },
   });
 }
 
-// 북마크 삭제 (임시 비활성화)
+// 북마크 삭제
 export function useDeleteBookmarkMutation() {
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   return useMutation({
     mutationFn: async (bookmarkId: string): Promise<void> => {
-      throw new Error('북마크 삭제 기능이 임시로 비활성화되었습니다.');
+      if (!isLoggedIn) {
+        toast.error('로그인이 필요합니다', {
+          description: '북마크 기능을 사용하려면 로그인해주세요.',
+        });
+        throw new Error('Not logged in');
+      }
+      
+      return deleteBookmark(bookmarkId);
     },
-    onSuccess: () => {},
-    onError: () => {
-      console.log('북마크 삭제 기능이 비활성화되어 있습니다.');
+    onSuccess: () => {
+      toast.success('북마크가 삭제되었습니다');
+      
+      // 북마크 목록 및 검색 결과 무효화하여 최신 데이터 가져오기
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['papers', 'search'] });
+    },
+    onError: (error: Error) => {
+      toast.error('북마크 삭제 실패', {
+        description: error.message || '다시 시도해주세요.',
+      });
     },
   });
 }
