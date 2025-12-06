@@ -9,7 +9,6 @@ import { ScrollToTopButton } from '../layout/ScrollToTopButton';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useRegisterMutation } from '../../hooks/api/useRegister';
 import { useUsernameExistsQuery } from '../../hooks/api/useUsernameExists';
-// @ts-ignore - vite-env.d.ts에서 타입 선언됨
 import logo from '../../assets/logo.png';
 
 export function SignupPage() {

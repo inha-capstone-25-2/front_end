@@ -13,7 +13,6 @@ import { useQuitAccountMutation } from '../../hooks/api/useQuitAccount';
 import { useMyProfileQuery } from '../../hooks/api/useMyProfile';
 import { login } from '../../lib/api';
 import { toast } from 'sonner';
-// @ts-ignore
 import logo from '../../assets/logo.png';
 
 // 상수 정의

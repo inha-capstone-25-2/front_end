@@ -111,7 +111,7 @@ export function SearchHeader({
               {/* Mobile Search Icon */}
               <button
                 onClick={handleSearch}
-                disabled={disabled || !searchValue.trim()}
+                disabled={disabled}
                 className="absolute right-3 top-1/2 -translate-y-1/2 sm:hidden p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ color: "#4FA3D1" }}
                 aria-label="검색"
@@ -123,7 +123,7 @@ export function SearchHeader({
             <Button
               size="lg"
               onClick={handleSearch}
-              disabled={disabled || !searchValue.trim()}
+              disabled={disabled}
               className="hidden sm:flex text-white px-10 py-8 text-base md:text-lg items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: "#4FA3D1" }}
             >

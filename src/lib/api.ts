@@ -4,7 +4,7 @@ import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, Usernam
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://44.234.58.137';
 
-// Axios 인스턴스 생성
+// Axios 인스턴스 생성 및 설정
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
@@ -48,7 +48,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response Interceptor: 에러 처리
+// Response Interceptor: 에러 처리 및 401 자동 로그아웃
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
@@ -99,7 +99,6 @@ export const endpoints = {
 };
 
 // 인증 관련 API 함수
-
 // 로그인
 export const login = (body: LoginRequest): Promise<LoginResponse> => {
   const params = new URLSearchParams();
@@ -207,13 +206,11 @@ export const getPaperById = (id: string): Promise<Paper> => {
   return getPaperDetail(id);
 };
 
-// 추천 논문 조회
-// - 상세 페이지에서 보고 있는 논문(paperId)을 기반으로 유사 논문을 추천
-// - 서버 엔드포인트: GET /recommendations
-//   - 쿼리 파라미터로 papers_id, top_k 를 전달 (예: /recommendations?papers_id=0704.0001&top_k=6)
+// 추천 논문 조회: 상세 페이지 논문 기반 유사 논문 추천 (GET /recommendations/rl)
 export const getRecommendations = (
   paperId: string | number,
-  topK: number = 6
+  topK: number = 6,
+  candidateK: number = 100
 ): Promise<Paper[]> => {
   type ServerResponse = {
     // 추천 API 전용 필드
@@ -225,11 +222,11 @@ export const getRecommendations = (
     items?: Paper[];
   };
 
-  return api.get<ServerResponse | Paper[]>(endpoints.recommendations, {
+  return api.get<ServerResponse | Paper[]>(`${endpoints.recommendations}/rl`, {
     params: {
       top_k: topK,
-      // API 명세: papers_id 기준으로 유사 논문 추천
-      papers_id: paperId,
+      candidate_k: candidateK,
+      base_paper_id: paperId,
     },
     timeout: 420000, // 추천 논문 조회는 최대 7분까지 대기
   }).then(res => {
@@ -270,6 +267,8 @@ export const getRecommendations = (
             // summary를 우선 사용, 없으면 abstract 사용
             summary: (item as any).summary || (item as any).abstract,
             abstract: (item as any).abstract,
+            // recommendation_id가 있으면 포함 (추천 논문 클릭 기록용)
+            recommendation_id: item.recommendation_id || item._id || item.id,
           };
 
           return paper;
@@ -290,7 +289,6 @@ export const getRecommendations = (
     // 알 수 없는 응답 형식인 경우 빈 배열
     return [];
   }).catch((error: AxiosError) => {
-    console.error('추천 논문 조회 실패:', error);
     if (error.response?.data) {
       const errorData = error.response.data as any;
       if (errorData.error) {
@@ -302,6 +300,51 @@ export const getRecommendations = (
     }
     throw error;
   });
+};
+
+// 추천 논문 클릭 기록: 추천 논문 클릭 시 서버에 기록 전송 (POST /recommendations/{recommendation_id}/click)
+export const recordRecommendationClick = (recommendationId: string): Promise<void> => {
+  return api.post(`${endpoints.recommendations}/${recommendationId}/click`)
+    .then(() => undefined)
+    .catch((error: AxiosError) => {
+      if (error.response?.data) {
+        const errorData = error.response.data as any;
+        if (errorData.error) {
+          throw new Error(errorData.error);
+        }
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+      }
+      throw error;
+    });
+};
+
+// 추천 논문 상호작용 결과 저장: 체류 시간, 스크롤 깊이, 북마크 등 사용자 상호작용 저장 (POST /recommendations/{recommendation_id}/interactions)
+export const recordRecommendationInteraction = (
+  recommendationId: string,
+  interaction: RecommendationInteractionRequest
+): Promise<void> => {
+  return api.post(
+    `${endpoints.recommendations}/${recommendationId}/interactions`,
+    {
+      recommendation_id: recommendationId,
+      ...interaction,
+    }
+  )
+    .then(() => undefined)
+    .catch((error: AxiosError) => {
+      if (error.response?.data) {
+        const errorData = error.response.data as any;
+        if (errorData.error) {
+          throw new Error(errorData.error);
+        }
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+      }
+      throw error;
+    });
 };
 
 // 검색 기록 조회
@@ -345,8 +388,6 @@ export const fetchViewedPapers = (page: number = 1, limit: number = 10): Promise
   });
 };
 
-// 검색어 기록 조회 API(getSearchHistory)는 더 이상 사용되지 않아 제거되었습니다.
-
 // 북마크 관련 API 함수
 
 // 북마크 조회
@@ -371,7 +412,7 @@ export const fetchBookmarks = (): Promise<BookmarkItem[]> => {
       
       return {
         id: item._id || item.id || '',
-        paper_id: paperId,  // doi를 paper_id로 저장
+        paper_id: paperId,
         notes: item.notes,
         // 논문 정보가 포함된 경우 paper 필드에 설정
         paper: item.paper ? {
@@ -407,17 +448,16 @@ export const deleteInterestCategory = (code: string): Promise<void> =>
 // 북마크 추가
 export const addBookmark = (paperId: string, notes?: string): Promise<AddBookmarkResponse> => {
   const body: AddBookmarkRequest = {
-    doi: paperId,  // paper.id가 DOI 값이므로 doi로 전달
+    doi: paperId,
   };
   
   if (notes) {
     body.notes = notes;
   }
   
-  return api.post<AddBookmarkResponse>(endpoints.bookmarks, body)
+    return api.post<AddBookmarkResponse>(endpoints.bookmarks, body)
     .then(response => response.data)
     .catch((error: AxiosError) => {
-      // 서버 응답에서 에러 메시지 추출
       if (error.response?.data) {
         const errorData = error.response.data as any;
         if (errorData.error) {
@@ -436,10 +476,6 @@ export const deleteBookmark = (bookmarkId: string): Promise<void> => {
   return api.delete(`${endpoints.bookmarks}/${bookmarkId}`).then(() => undefined);
 };
 
-// 북마크 수정 (임시 비활성화)
-export const updateBookmark = (_bookmarkId: string, _notes: string): Promise<UpdateBookmarkResponse> => {
-  return Promise.reject(new Error('북마크 수정 기능이 임시로 비활성화되었습니다.'));
-};
 
 // 타입 정의
 
@@ -477,10 +513,10 @@ export interface Paper {
   categories?: string[];
   externalUrl?: string;
   translatedSummary?: string;
-  // 백엔드에서 summary가 문자열 또는 { en, ko } 객체로 올 수 있음
   summary?: string | { en?: string; ko?: string | null };
   update_count?: number;
   update_date?: string;
+  recommendation_id?: string;
 }
 
 export interface SearchPapersResponse {
@@ -560,7 +596,6 @@ export interface CategoryInfo {
   name?: string;
 }
 
-// items 배열의 각 항목 타입
 export interface InterestCategoryItem {
   code: string;
   name_ko: string | null;
@@ -568,7 +603,7 @@ export interface InterestCategoryItem {
 }
 
 export interface UserInterestsResponse {
-  items?: InterestCategoryItem[];  // 서버 응답 형식: { items: [...] }
+  items?: InterestCategoryItem[];
   category_ids?: number[];
   category_codes?: string[];
   categories?: CategoryInfo[];
@@ -576,4 +611,16 @@ export interface UserInterestsResponse {
 
 export interface UserInterestsRequest {
   category_codes: string[];
+}
+
+export interface RecommendationInteractionRequest {
+  dwell_time_seconds?: number;
+  scroll_depth_percent?: number;
+  read_abstract?: boolean;
+  expanded_sections?: string[];
+  bookmarked?: boolean;
+  downloaded_pdf?: boolean;
+  copied_citation?: boolean;
+  shared?: boolean;
+  device_type?: string;
 }

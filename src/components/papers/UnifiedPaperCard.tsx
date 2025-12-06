@@ -58,6 +58,7 @@ export function UnifiedPaperCard({
   showJournal = false,
   showCategories = true,
   className,
+  recommendationId,
 }: UnifiedPaperCardProps) {
   const [isAuthorsExpanded, setIsAuthorsExpanded] = useState(false);
   const [showExpandButton, setShowExpandButton] = useState(false);
@@ -77,7 +78,7 @@ export function UnifiedPaperCard({
 
   const handleCardClick = () => {
     if (onPaperClick) {
-      onPaperClick(paperId);
+      onPaperClick(paperId, recommendationId);
     }
   };
 

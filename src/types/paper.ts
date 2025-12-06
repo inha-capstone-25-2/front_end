@@ -55,7 +55,9 @@ export interface BasePaperCardProps {
   /** 북마크 토글 핸들러 */
   onToggleBookmark?: (paperId: number | string) => void;
   /** 논문 클릭 핸들러 */
-  onPaperClick?: (paperId: number | string) => void;
+  onPaperClick?: (paperId: number | string, recommendationId?: string) => void;
+  /** 추천 논문 ID (추천 논문인 경우 클릭 기록용) */
+  recommendationId?: string;
 }
 
 /**

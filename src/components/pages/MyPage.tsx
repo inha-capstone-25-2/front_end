@@ -64,7 +64,6 @@ export function MyPage() {
         setProfileImage(reader.result as string);
       };
       reader.readAsDataURL(file);
-      // TODO: 실제 이미지 업로드 API 호출
       toast.success('프로필 사진이 변경되었습니다');
     }
   };
@@ -104,7 +103,6 @@ export function MyPage() {
       return;
     }
 
-    // TODO: 실제 비밀번호 변경 API 호출
     setNewPassword('');
     setConfirmPassword('');
     setShowPasswordChange(false);

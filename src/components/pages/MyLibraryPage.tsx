@@ -39,8 +39,7 @@ export function MyLibraryPage() {
         try {
           const { getPaperDetail } = await import('../../lib/api');
           return await getPaperDetail(bookmark.paper_id);
-        } catch (error) {
-          console.error(`논문 정보 가져오기 실패 (${bookmark.paper_id}):`, error);
+        } catch {
           return null;
         }
       },

@@ -14,10 +14,9 @@ export const useLogoutMutation = () => {
       logout();
       navigate('/');
     },
-    onError: (error) => {
+    onError: () => {
       logout();
       navigate('/');
-      console.error('Logout error:', error);
     },
   });
 };

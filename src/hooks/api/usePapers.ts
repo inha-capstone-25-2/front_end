@@ -1,6 +1,6 @@
 // 논문 관련 React Query 훅
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, endpoints, Paper, SearchPapersResponse, BookmarkResponse, SearchHistoryResponse, fetchSearchHistory, fetchViewedPapers, addBookmark, AddBookmarkResponse, deleteBookmark, updateBookmark, BookmarkItem, UpdateBookmarkResponse, fetchBookmarks, BookmarksListResponse, BookmarkListItem, searchPapers, getPaperDetail, getPaperById, getRecommendations } from '../../lib/api';
+import { api, endpoints, Paper, SearchPapersResponse, BookmarkResponse, SearchHistoryResponse, fetchSearchHistory, fetchViewedPapers, addBookmark, AddBookmarkResponse, deleteBookmark, BookmarkItem, fetchBookmarks, searchPapers, getPaperDetail, getRecommendations } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { useAppStore } from '../../store/useAppStore';
 import { toast } from 'sonner';
@@ -46,9 +46,7 @@ export function usePaperDetailQuery(paperId: string | number, enabled: boolean =
   });
 }
 
-// 추천 논문 조회
-// - paperId를 queryKey에 포함시켜 논문별로 캐시를 분리
-// - 상세 페이지에 진입할 때마다 항상 refetch 되도록 설정
+// 추천 논문 조회: paperId별 캐시 분리, 논문 변경 시에만 API 호출
 export function useRecommendationsQuery(
   paperId: string | number | null,
   topK: number = 6,
@@ -64,13 +62,10 @@ export function useRecommendationsQuery(
       }
       return getRecommendations(paperId, topK);
     },
-    enabled: enabled && isLoggedIn && !!paperId, // 논문 ID가 있고 로그인일 때만 호출
-    refetchOnMount: 'always', // 상세 페이지 마운트 시마다 재요청
-    staleTime: 0,
+    enabled: enabled && isLoggedIn && !!paperId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
     retry: false,
-    onError: (error: Error) => {
-      console.error('추천 논문 조회 에러:', error);
-    },
   });
 }
 
@@ -255,21 +250,6 @@ export function useDeleteBookmarkMutation() {
   });
 }
 
-// 북마크 수정 (임시 비활성화)
-export function useUpdateBookmarkMutation() {
-  const queryClient = useQueryClient();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-
-  return useMutation({
-    mutationFn: async ({ bookmarkId, notes }: { bookmarkId: string; notes: string }): Promise<UpdateBookmarkResponse> => {
-      throw new Error('북마크 수정 기능이 임시로 비활성화되었습니다.');
-    },
-    onSuccess: () => {},
-    onError: () => {
-      console.log('북마크 수정 기능이 비활성화되어 있습니다.');
-    },
-  });
-}
 
 // 검색 기록 조회
 export function useSearchHistoryQuery(userId: string | null, limit: number = 20, enabled: boolean = true) {

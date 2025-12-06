@@ -327,6 +327,7 @@ export function PaperDetailPage() {
                     isBookmarked={checkIsBookmarked(recommendedPaper.id)}
                     showSummary={false}
                     showBookmark={true}
+                    recommendationId={recommendedPaper.recommendation_id}
                   />
                 ))}
               </div>

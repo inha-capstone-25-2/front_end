@@ -84,26 +84,7 @@ export function SearchResultsListPage() {
   const papers = searchData?.papers || [];
   const totalPages = searchData?.total ? Math.ceil(searchData.total / (searchData.pageSize || 10)) : 0;
   
-  // 디버깅: 서버 응답 데이터 확인
-  useEffect(() => {
-    if (searchData) {
-      console.log('=== 검색 결과 디버깅 ===');
-      console.log('전체 응답 데이터:', searchData);
-      console.log('total:', searchData.total);
-      console.log('page:', searchData.page);
-      console.log('pageSize:', searchData.pageSize);
-      console.log('papers 배열:', papers);
-      console.log('papers 배열 길이:', papers.length);
-      if (papers.length > 0) {
-        console.log('첫 번째 논문:', papers[0]);
-        console.log('첫 번째 논문 키들:', Object.keys(papers[0]));
-      }
-      console.log('========================');
-    }
-  }, [searchData, papers]);
-  
-  // 연도 필터 임시 제거 (문제 진단용)
-  // TODO: 연도 필터가 필요한 경우 아래 주석을 해제하고 로직 수정
+  // 연도 필터 제거: 모든 논문 표시
   // const filteredPapers = papers.filter(paper => {
   //   // year가 없으면 필터링에서 제외 (표시)
   //   if (!paper.year) {
@@ -122,20 +103,8 @@ export function SearchResultsListPage() {
   //   return numericYear >= yearRange[0] && numericYear <= yearRange[1];
   // });
   
-  // 연도 필터 제거: 모든 논문 표시
   const filteredPapers = papers;
-  
   const currentPapers = filteredPapers;
-  
-  // 디버깅: 필터링 후 데이터 확인
-  useEffect(() => {
-    if (!isLoading && !isError) {
-      console.log('=== 필터링 후 데이터 ===');
-      console.log('currentPapers 길이:', currentPapers.length);
-      console.log('currentPapers:', currentPapers);
-      console.log('======================');
-    }
-  }, [currentPapers, isLoading, isError]);
 
   const handleCategorySelect = (categoryCode: string) => {
     const newCategories = selectedCategories.includes(categoryCode)
@@ -322,12 +291,7 @@ export function SearchResultsListPage() {
                   {/* Paper List */}
                   <div className="space-y-4 mb-12">
                     {currentPapers.length > 0 ? (
-                      currentPapers.map((paper) => {
-                        // 디버깅: 각 논문 렌더링 확인
-                        if (import.meta.env.MODE === 'development') {
-                          console.log('논문 렌더링:', paper.id, paper.title);
-                        }
-                        return (
+                      currentPapers.map((paper) => (
                           <UnifiedPaperCard
                             key={paper.id}
                             paperId={paper.id}
@@ -341,8 +305,7 @@ export function SearchResultsListPage() {
                             onToggleBookmark={handleBookmark}
                             isBookmarked={isBookmarked(paper.id)}
                           />
-                        );
-                      })
+                      ))
                     ) : (
                       <div className="text-center py-12">
                         <p className="text-gray-500 text-lg">

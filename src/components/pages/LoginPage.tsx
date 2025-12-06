@@ -11,7 +11,6 @@ import { ScrollToTopButton } from '../layout/ScrollToTopButton';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useLoginMutation } from '../../hooks/api/useLogin';
 import { toast } from 'sonner';
-// @ts-ignore - vite-env.d.ts에서 타입 선언됨
 import logo from '../../assets/logo.png';
 
 // Google 로고 SVG 컴포넌트

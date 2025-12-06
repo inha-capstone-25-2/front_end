@@ -185,10 +185,6 @@ export function UserInterestCategory() {
       }
       // 4. category_ids만 있는 경우 (서버에서 변환 정보 제공 필요)
       else if (interestCategoriesData.category_ids && interestCategoriesData.category_ids.length > 0) {
-        // 서버에서 카테고리 정보를 함께 반환하지 않는 경우
-        // 이 경우 서버 API가 카테고리 정보를 함께 반환하도록 수정 필요
-        console.warn('category_ids만 반환되었습니다. 서버에서 category_codes 또는 categories 정보를 함께 반환해야 합니다.');
-        // 일단 빈 배열로 처리 (서버 수정 필요)
         categoryCodes = [];
       }
       
