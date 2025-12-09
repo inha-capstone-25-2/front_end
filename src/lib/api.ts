@@ -138,66 +138,64 @@ export const quitAccount = (): Promise<void> =>
 // 논문 관련 API 함수
 
 // 논문 검색
+// API 명세: GET /papers/search?categories=cs.Al&q=transformer&sort_by=view_count&page=1
 export const searchPapers = (
   q?: string,
   page: number = 1,
   categories?: string | string[],
   sort_by?: string
 ): Promise<SearchPapersResponse> => {
-  const params: Record<string, string | number> = {
-    page,
-  };
+  const params: Record<string, string | number> = {};
+  
+  // page는 항상 포함 (기본값 1)
+  params.page = page;
   
   // q가 있을 때만 추가
-  if (q) {
-    params.q = q;
+  if (q && q.trim() !== '') {
+    params.q = q.trim();
   }
   
+  // categories가 있을 때만 추가 (배열이면 쉼표로 구분된 문자열로 변환)
   if (categories) {
     if (Array.isArray(categories)) {
-      // 배열을 쉼표 구분 문자열로 변환
-      params.categories = categories.join(',');
-    } else {
-      params.categories = categories;
+      const filteredCategories = categories.filter(c => c && c.trim() !== '');
+      if (filteredCategories.length > 0) {
+        params.categories = filteredCategories.join(',');
+      }
+    } else if (categories.trim() !== '') {
+      params.categories = categories.trim();
     }
   }
   
-  if (sort_by) {
-    params.sort_by = sort_by;
+  // sort_by가 있을 때만 추가
+  if (sort_by && sort_by.trim() !== '') {
+    params.sort_by = sort_by.trim();
   }
   
+  // API 응답 구조 (이미지 명세 기준)
   type ServerResponse = {
-    papers?: Paper[];
-    results?: Paper[];
-    data?: Paper[];
-    items?: Paper[];
-    total?: number;
-    page?: number;
-    page_size?: number;
-    pageSize?: number;
-    total_pages?: number;
-    has_next?: boolean;
-    has_prev?: boolean;
-    is_approximate?: boolean;
+    items: Paper[];  // API 명세에 따라 items 배열 사용
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    is_approximate: boolean;
   };
 
-  return api.get<SearchPapersResponse | ServerResponse>(endpoints.papers.search, {
+  return api.get<ServerResponse>(endpoints.papers.search, {
     params,
     timeout: 180000,
   }).then(res => {
-    const serverData = (res.data || {}) as ServerResponse;
+    const serverData = res.data as ServerResponse;
     
-    const papersArray = serverData.papers || 
-                       serverData.results || 
-                       serverData.data || 
-                       serverData.items || 
-                       [];
-    
+    // API 명세에 맞춰 items 배열 사용
     const response: SearchPapersResponse = {
-      papers: papersArray,
+      papers: serverData.items || [],
       total: serverData.total || 0,
-      page: serverData.page || 1,
-      pageSize: serverData.page_size || serverData.pageSize || 10,
+      page: serverData.page || page,
+      pageSize: serverData.page_size || 10,
       totalPages: serverData.total_pages,
       hasNext: serverData.has_next,
       hasPrev: serverData.has_prev,

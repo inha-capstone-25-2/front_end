@@ -11,7 +11,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { usePaperActions } from '../../hooks/usePaperActions';
 
 export function HomePage() {
-  const { goToLogin, goToSearch } = useNavigation();
+  const { goToLogin, goToSearch, goToCategorySearch } = useNavigation();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const bookmarkedPaperIds = useAppStore((state) => state.bookmarkedPaperIds);
   const { handlePaperClick, handleBookmark } = usePaperActions();
@@ -21,7 +21,7 @@ export function HomePage() {
       goToLogin();
       return;
     }
-    goToSearch(categoryCode);
+    goToCategorySearch(categoryCode);
   };
 
   const handleSearch = (query: string) => {
@@ -37,16 +37,20 @@ export function HomePage() {
       <Header />
       <main className="flex-1">
         <HeroSection onSearch={handleSearch} />
-        <RecentlyViewedPapers 
-          onPaperClick={handlePaperClick} 
-          bookmarkedPaperIds={bookmarkedPaperIds.map(id => parseInt(id))}
-          onToggleBookmark={handleBookmark}
-        />
+        {isLoggedIn && (
+          <RecentlyViewedPapers 
+            onPaperClick={handlePaperClick} 
+            bookmarkedPaperIds={bookmarkedPaperIds.map(id => parseInt(id))}
+            onToggleBookmark={handleBookmark}
+          />
+        )}
         <CategorySearch onCategorySelect={handleCategorySelect} />
-        <PopularPapers 
-          onToggleBookmark={handleBookmark}
-          onPaperClick={handlePaperClick}
-        />
+        {isLoggedIn && (
+          <PopularPapers 
+            onToggleBookmark={handleBookmark}
+            onPaperClick={handlePaperClick}
+          />
+        )}
       </main>
       <Footer />
       <ScrollToTopButton />

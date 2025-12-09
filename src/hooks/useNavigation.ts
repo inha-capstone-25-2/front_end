@@ -23,6 +23,7 @@ export function useNavigation() {
     goToQuitAccount: () => navigate('/quit'),
     goToPaper: (paperId: string | number) => navigate(`/paper/${paperId}`),
     goToSearch: (query: string) => navigate(`/search?q=${encodeURIComponent(query)}`),
+    goToCategorySearch: (categoryCode: string) => navigate(`/search?categories=${encodeURIComponent(categoryCode)}`),
     goBack: () => navigate(-1),
   };
 }

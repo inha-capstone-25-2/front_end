@@ -28,7 +28,12 @@ export function useSearchPapersQuery(params: SearchPapersParams, enabled: boolea
         params.sort_by
       );
     },
-    enabled: enabled && (params.q !== undefined || params.sort_by !== undefined),
+    // 검색어, 카테고리, 또는 정렬 기준 중 하나라도 있으면 활성화 (카테고리만으로도 검색 가능)
+    enabled: enabled && (
+      (params.q !== undefined && params.q !== '') || 
+      (params.categories !== undefined && params.categories.length > 0) || 
+      params.sort_by !== undefined
+    ),
     staleTime: 2 * 60 * 1000,
     retry: false,
   });

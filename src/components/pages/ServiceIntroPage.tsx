@@ -9,18 +9,6 @@ export function ServiceIntroPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="w-full py-20 bg-gradient-to-b from-[#215285] to-[#4FA3D1] text-white">
-          <div className="max-w-[1200px] mx-auto px-4 md:px-6 lg:px-10 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              RSRS 논문 검색 서비스
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-100 max-w-2xl mx-auto">
-              AI 기반 논문 검색, 자동 번역 및 요약 서비스로 연구를 더 쉽게
-            </p>
-          </div>
-        </section>
-
         {/* Features */}
         <section className="w-full py-20 bg-white">
           <div className="max-w-[1200px] mx-auto px-4 md:px-6 lg:px-10">

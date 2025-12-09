@@ -22,6 +22,7 @@ export function SearchResultsListPage() {
   const sortByParam = searchParams.get('sort_by');
   
   // URL에서 카테고리 파라미터 파싱 (메모이제이션)
+  // API 명세: categories=cs.Al 형식 (쉼표로 구분 가능)
   const selectedCategories = useMemo(() => {
     return categoriesParam 
       ? categoriesParam.split(',').filter(Boolean)
@@ -61,9 +62,10 @@ export function SearchResultsListPage() {
   }), [searchQuery, selectedCategories, currentPage, sortBy]);
 
   // API에서 검색 결과 가져오기
+  // 검색어가 있거나 카테고리가 선택되어 있으면 활성화 (카테고리만으로도 검색 가능)
   const { data: searchData, isLoading, isError, error, refetch } = useSearchPapersQuery(
     searchParams_obj,
-    !!searchQuery
+    !!searchQuery || selectedCategories.length > 0
   );
 
   // 로딩 시간 추적
@@ -250,7 +252,17 @@ export function SearchResultsListPage() {
                   {/* Search Info */}
                   <div className="mb-6">
                     <p className="text-gray-600">
-                      <span className="text-[#215285]">"{searchQuery}"</span>에 대한 검색 결과 
+                      {searchQuery ? (
+                        <>
+                          <span className="text-[#215285]">"{searchQuery}"</span>에 대한 검색 결과 
+                        </>
+                      ) : selectedCategories.length > 0 ? (
+                        <>
+                          카테고리 <span className="text-[#215285]">"{selectedCategories.map(c => getCategoryNameByCode(c)).join(', ')}"</span>에 대한 검색 결과
+                        </>
+                      ) : (
+                        '검색 결과'
+                      )}
                       <span className="ml-2 text-sm text-gray-500">
                         ({searchData?.total || 0}개의 논문{searchData?.total && searchData.total > filteredPapers.length ? `, ${filteredPapers.length}개 표시` : ''})
                       </span>
@@ -316,7 +328,9 @@ export function SearchResultsListPage() {
                     ) : (
                       <div className="text-center py-12">
                         <p className="text-gray-500 text-lg">
-                          {searchQuery ? '검색 결과가 없습니다.' : '검색어를 입력해주세요.'}
+                          {searchQuery || selectedCategories.length > 0 
+                            ? '검색 결과가 없습니다.' 
+                            : '검색어를 입력하거나 카테고리를 선택해주세요.'}
                         </p>
                       </div>
                     )}
