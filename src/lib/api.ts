@@ -267,7 +267,7 @@ export const searchPapers = (
   
   // API 응답 구조 (이미지 명세 기준)
   type ServerResponse = {
-    items: Paper[];  // API 명세에 따라 items 배열 사용
+    items: SearchPaperServerItem[];  // 서버에서 받아오는 원시 데이터 타입
     page: number;
     page_size: number;
     total: number;
